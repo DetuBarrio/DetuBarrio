@@ -1,182 +1,132 @@
-# DeTuBarrio - MVP Backend + Frontend.
+# DeTuBarrio
 
-Aplicacion TFG (2DAW) con API REST, autenticacion JWT, reseñas y frontend Bootstrap conectado.
+Proyecto TFG (2DAW) orientado a comercios de barrio con backend Spring Boot + JWT, base de datos MySQL gestionada por Flyway y frontend Vue 3.
+
+## Resumen del proyecto
+
+DeTuBarrio permite:
+
+- consultar categorias y comercios
+- ver detalle de comercios y sus productos
+- crear reseñas/comentarios
+- autenticacion con JWT (login, registro y endpoint me)
+- dashboards por rol (USUARIO, COMERCIO y ADMIN)
+- gestion administrativa de solicitudes de comercios y mensajes de contacto
 
 ## Stack tecnologico
 
+- Backend: Java 21, Spring Boot 3.5.x, Spring Security, Spring Data JPA, Flyway, MySQL, Swagger/OpenAPI
+- Frontend principal: Vue 3 + Vite + Vue Router + Bootstrap
+
+## Estructura del repositorio
+
+```text
+DetuBarrio/
+|- rest/rest/                 # API Spring Boot (backend)
+|  |- src/main/java/          # Controladores, servicios, repositorios, seguridad
+|  |- src/main/resources/     # application.properties + migraciones Flyway
+|  |- .env.example            # plantilla de variables locales (sin secretos)
+|  |- pom.xml
+|
+|- a/vue/                     # Frontend SPA Vue 3
+|- ARQUITECTURA.md            # Arquitectura tecnica
+|- AIVEN_SETUP.md             # Guia de base de datos remota en Aiven
+|- MANUAL_USO.md              # Manual funcional por roles
+```
+
+## Documentacion recomendada
+
+1. [ARQUITECTURA.md](ARQUITECTURA.md): vision tecnica completa (capas, seguridad, datos, flujo)
+2. [AIVEN_SETUP.md](AIVEN_SETUP.md): instalacion y conexion a MySQL remota
+3. [MANUAL_USO.md](MANUAL_USO.md): guia de uso por rol y funciones
+
+## Requisitos previos
+
 - Java 21
-- Spring Boot 3 (Web, JPA, Security, Validation)
-- MySQL (una sola configuración para desarrollo y despliegue)
-- Maven
-- Bootstrap 5 + HTML + CSS + JavaScript vanilla
-- OpenAPI/Swagger
+- Maven Wrapper incluido (no necesitas Maven global)
+- Node.js 20+
+- Servicio MySQL accesible (por ejemplo Aiven)
 
-## Funcionalidad MVP implementada
+## Configuracion local rapida
 
-- Catalogo de categorias, comercios y productos
-- Reseñas/comentarios desde frontend y API
-- Autenticacion JWT (login/register/me)
-- Dashboards por rol (`USUARIO`, `COMERCIO`)
-- Documentacion API con Swagger UI
-- Datos semilla para demo local
+### 1) Backend
 
-## Estructura
-
-- `src/main/java/detubarrio/rest/config`: seguridad, CORS, OpenAPI y datos semilla.
-- `src/main/java/detubarrio/rest/controller`: endpoints REST.
-- `src/main/java/detubarrio/rest/service`: logica de negocio.
-- `src/main/java/detubarrio/rest/repository`: acceso a datos.
-- `src/main/java/detubarrio/rest/model`: entidades JPA.
-- `src/main/java/detubarrio/rest/dto`: contratos de API.
-- `src/main/java/detubarrio/rest/security`: JWT y filtro de autenticacion.
-- `src/main/java/detubarrio/rest/exception`: manejo global de errores.
-- `src/main/resources/static`: frontend servido por Spring Boot.
-
-## Arranque local (Windows PowerShell)
-
-Ejecuta en esta carpeta (`rest/rest`):
-
-```powershell
-.\mvnw.cmd spring-boot:run
-```
-
-## Como conectar el backend con MySQL
-
-El backend usa una sola configuración en `rest/rest/src/main/resources/application.properties`.
-
-Por defecto conecta con MySQL local en `localhost:3307`:
-
-- Base de datos: `detubarrio`
-- Usuario: `detubarrio`
-- Contraseña: `detubarrio123`
-
-Si quieres conectarlo a una MySQL remota cuando despliegues, solo tienes que cambiar estas variables de entorno:
-
-```powershell
-$env:DB_URL="jdbc:mysql://tu-servidor:3306/detubarrio?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
-$env:DB_USER="tu_usuario"
-$env:DB_PASSWORD="tu_password"
-```
-
-Si despliegas en Docker o en un VPS, esas variables se ponen en el panel del hosting, en el `.env` o en la configuración del servicio.
-
-## Que usar cuando presentes
-
-- Durante tus pruebas: usa la MySQL local que tengas instalada en tu portátil.
-- Cuando lo despliegues: usa la MySQL remota y cambia solo `DB_URL`, `DB_USER` y `DB_PASSWORD`.
-
-No necesitas cambiar de perfil ni usar H2.
-
-Importante:
-
-- No cierres esa terminal: si la cierras, se detiene el backend.
-- Abre otra terminal para hacer pruebas (`Terminal > New Terminal`).
-
-## Validacion rapida (smoke test)
-
-Pega en una terminal nueva:
-
-```powershell
-# Health
-Invoke-RestMethod "http://localhost:8080/api/health" | ConvertTo-Json -Compress
-
-# Listar comercios
-Invoke-RestMethod "http://localhost:8080/api/comercios" | ConvertTo-Json -Depth 5
-
-# Login usuario semilla
-$loginBody = @{ email='ana@detubarrio.local'; password='123456' } | ConvertTo-Json
-$login = Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/auth/login" -ContentType "application/json" -Body $loginBody
-$login | ConvertTo-Json -Compress
-
-# Endpoint protegido /me
-$headers = @{ Authorization = "Bearer $($login.token)" }
-Invoke-RestMethod -Uri "http://localhost:8080/api/auth/me" -Headers $headers | ConvertTo-Json -Compress
-
-# Crear comentario/reseña
-$body = @{ comercioId=1; titulo='Prueba'; comentario='Funciona'; valoracion=5; autorNombre='QA'; autorEmail='qa@example.com' } | ConvertTo-Json
-Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/comentarios" -ContentType "application/json; charset=utf-8" -Body $body | ConvertTo-Json -Compress
-```
-
-Si todas responden bien, el MVP backend+auth+reviews esta operativo.
-
-## Swagger
-
-Con el backend encendido:
-
-- `http://localhost:8080/swagger-ui.html`
-- `http://localhost:8080/v3/api-docs`
-
-## Frontend para demo
-
-- `http://localhost:8080/login_db.html`
-- `http://localhost:8080/gestion_usuario.html`
-- `http://localhost:8080/gestion_comercio.html`
-- `http://localhost:8080/comercio_individual.html?id=1`
-
-## Base de datos
-
-- La base de datos ya no depende de H2.
-- Flyway aplica la migración única `V1__all_in_one.sql` al arrancar el backend.
-- El arranque no depende de `Script_corregido.sql` ni de scripts manuales sueltos.
-
-## Base compartida para trabajar en equipo
-
-Si quieres que tu companero y tu veais exactamente los mismos datos en todo momento,
-no useis dos MySQL locales distintas. Usad una sola MySQL remota compartida.
-
-Flujo recomendado en Aiven:
-
-1. En Aiven, crear un proyecto y anadir el servicio MySQL.
-2. En Aiven, abrir la conexion del servicio y copiar estas variables:
-	- MYSQLHOST
-	- MYSQLPORT
-	- MYSQLDATABASE
-	- MYSQLUSER
-	- MYSQLPASSWORD
-3. Crear el archivo local [rest/rest/.env](rest/rest/.env) copiando [rest/rest/.env.example](rest/rest/.env.example) y completar valores reales de Aiven.
+Desde la raiz del repo:
 
 ```powershell
 cd rest/rest
 Copy-Item .env.example .env
 ```
 
-4. Confirmar que ambos teneis el mismo valor de `APP_JWT_SECRET` en ese `.env`.
+Edita el archivo `.env` con valores reales:
 
-	Para generar un secreto seguro en PowerShell y copiarlo en `APP_JWT_SECRET` puedes usar:
+- `DB_URL`
+- `DB_USER`
+- `DB_PASSWORD`
+- `APP_JWT_SECRET`
+- `APP_JWT_EXPIRATION`
 
-```powershell
-[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 }))
-```
-
-	Copia la salida y pégala como valor de `APP_JWT_SECRET` en `rest/rest/.env` en ambos equipos.
-5. Arrancar backend (Spring carga `.env` automaticamente):
+Ejecuta el backend:
 
 ```powershell
 cd rest/rest
 .\mvnw.cmd spring-boot:run
 ```
 
-Con esto ambos backends conectan a la misma base y los cambios de datos se reflejan para los dos.
+Swagger:
 
-Consejos importantes para evitar problemas:
+- http://localhost:8080/swagger-ui.html
+- http://localhost:8080/api-docs
 
-- Mantened el mismo valor de APP_JWT_SECRET en ambos equipos; si cambia, los tokens JWT emitidos por un backend dejan de validar en el otro.
-- Mantened la misma zona horaria en la URL JDBC (`serverTimezone=UTC`).
-- Haced una copia de seguridad diaria de la base remota (`mysqldump`) antes de pruebas grandes.
-- Si quereis resetear datos de demo, hacedlo una sola vez sobre la base compartida y avisad al equipo.
+### 2) Frontend Vue
 
-## Siguientes mejoras recomendadas
+```powershell
+cd a/vue
+npm install
+npm run dev
+```
 
-** Ahora mismo el desarrollo del proyecto esta en fase beta, es decir hay cierta parte funcional ya pero requiere de tiempo para pulir y desarrollar todo lo demas **
+App Vue en desarrollo:
 
-1. Arreglar el footer de listado comercios
-2. Implementar logica de codigo para funcionamiento de otros elementos
-3. Mejorar tema de usabilidad y accesibilidad en el tema de las cosas poder acceder de mejor manera
-4. Añadir tests de integracion de auth, dashboard y comentarios.
-5. Documentar capturas de flujo en memoria del TFG (login, reseña, Swagger).
-6. Preparar despliegue (Docker o VPS) para demostracion final.
-..
-....
-......
-........
-..........
+- http://localhost:5173
+
+Nota: el frontend Vue usa proxy Vite para `/api` hacia `http://localhost:8080`.
+
+## Endpoints principales
+
+- `GET /api/health`
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/auth/me` (requiere token)
+- `GET /api/categorias`
+- `GET /api/comercios`
+- `GET /api/comercios/{id}`
+- `POST /api/comentarios` (requiere token)
+- `GET /api/dashboard/usuario` (requiere rol USUARIO)
+- `GET /api/dashboard/comercio` (requiere rol COMERCIO)
+- `GET /api/admin/comercios-pendientes` (requiere rol ADMIN)
+
+## Notas de seguridad importantes
+
+- No subas nunca `rest/rest/.env` al repositorio.
+- El repositorio ya ignora `.env` y publica solo `.env.example`.
+- Usa un `APP_JWT_SECRET` largo y aleatorio.
+
+Generar secreto seguro en PowerShell:
+
+```powershell
+[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 }))
+```
+
+## Flujo recomendado de cambios de BD
+
+- No edites migraciones ya aplicadas en entornos compartidos.
+- Crea nuevas migraciones versionadas (`V2__...sql`, `V3__...sql`, etc.).
+- Flyway las aplicara automaticamente al arrancar.
+
+## Estado actual del proyecto
+
+- Backend validado conectando a Aiven (`detubarrio_dev`)
+- Migraciones Flyway aplicadas correctamente
+- Frontend Vue listo para trabajar en local
+- Documentacion alineada a la arquitectura real del repositorio.
