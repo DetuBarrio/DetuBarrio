@@ -1,99 +1,98 @@
-# Despliegue de DeTuBarrio en Aiven
+# Guia de instalacion de base de datos en Aiven
 
-## Paso 1: Crear MySQL en Aiven (BASE DE DATOS COMPARTIDA)
+Esta guia describe como conectar DeTuBarrio a MySQL en Aiven para trabajo colaborativo.
 
-1. Ve a https://aiven.io y regístrate/inicia sesión.
-2. Crea un nuevo proyecto.
-3. Añade un servicio de tipo MySQL.
-4. Aiven crea la instancia y te muestra los datos de conexión del servicio.
-5. En la sección de conexión copia estos valores:
-   - `MYSQLHOST`: host de la BD
-   - `MYSQLPORT`: puerto, normalmente 3306
-   - `MYSQLDATABASE`: nombre de la BD
-   - `MYSQLUSER`: usuario de BD
-   - `MYSQLPASSWORD`: contraseña de BD
+## 1. Crear servicio MySQL
 
-## Paso 2: Configurar `.env` local con esos datos
+1. Entra en https://aiven.io
+2. Crea proyecto
+3. Crea servicio MySQL
+4. En la seccion de conexion copia:
+   - host
+   - port
+   - database
+   - user
+   - password
 
-En tu máquina local, edita `rest/rest/.env`:
+## 2. Preparar entorno local del backend
 
+Desde la raiz del repositorio:
+
+```powershell
+cd rest/rest
+Copy-Item .env.example .env
 ```
-DB_URL=jdbc:mysql://MYSQLHOST_VALUE:MYSQLPORT_VALUE/MYSQLDATABASE_VALUE?ssl-mode=REQUIRED&allowPublicKeyRetrieval=true&serverTimezone=UTC
-DB_USER=MYSQLUSER_VALUE
-DB_PASSWORD=MYSQLPASSWORD_VALUE
-APP_JWT_SECRET=detubarrio_secreto_compartido_2026
+
+Edita `rest/rest/.env` con tus valores de Aiven:
+
+```env
+DB_URL=jdbc:mysql://TU_HOST:TU_PORT/TU_DATABASE?sslMode=REQUIRED&allowPublicKeyRetrieval=true&serverTimezone=UTC
+DB_USER=TU_USER
+DB_PASSWORD=TU_PASSWORD
+APP_JWT_SECRET=TU_SECRETO_JWT_LARGO_Y_ALEATORIO
 APP_JWT_EXPIRATION=86400
 ```
 
-Ejemplo real con valores de Aiven:
-```
-DB_URL=jdbc:mysql://mysql-prod-abc123.aivencloud.com:12345/defaultdb?ssl-mode=REQUIRED&allowPublicKeyRetrieval=true&serverTimezone=UTC
-DB_USER=avnadmin
-DB_PASSWORD=abc123xyz456
-APP_JWT_SECRET=detubarrio_secreto_compartido_2026
-APP_JWT_EXPIRATION=86400
-```
-
-**Importante:** `APP_JWT_SECRET` no es un dato de Aiven; es un secreto del backend. Pon un valor largo y aleatorio en `rest/rest/.env` y usa exactamente el mismo en todos los backends que compartan sesión JWT.
-
-Si quieres generarlo rápido en PowerShell:
+Generar secreto JWT en PowerShell:
 
 ```powershell
 [Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 }))
 ```
 
-Después copia el resultado en `APP_JWT_SECRET` de tu `.env` y repítelo igual en el backend de la otra máquina.
+## 3. Arranque y validacion
 
-## Paso 3: Arrancar backend local contra BD remota
-
-En tu máquina:
+Arrancar backend:
 
 ```powershell
 cd rest/rest
 .\mvnw.cmd spring-boot:run
 ```
 
-Spring carga el `.env` automáticamente. Verás en los logs:
-- Conexión a la BD remota de Aiven
-- Flyway aplicando migraciones
-- Datos base cargados
+Validar endpoints:
 
-## Paso 4: Arrancar frontend local
+- http://localhost:8080/api/health
+- http://localhost:8080/swagger-ui.html
 
-En otra terminal:
+## 4. Trabajo en equipo
 
-```powershell
-cd a/vue
-npm install  # Primera vez
-npm run dev
-```
+Para que dos desarrolladores compartan sesiones correctamente:
 
-Accede a http://localhost:5173
+- misma base de datos remota
+- mismo `APP_JWT_SECRET`
+- misma configuracion de timezone en la JDBC URL
 
-## Resultado esperado
+## 5. Buenas practicas
 
-- Ambos desarrolladores usan el mismo `.env`
-- La BD está en Aiven (persistente, remota y compartida)
-- Backend y frontend corren locales en cada máquina
-- Todos los cambios de datos se ven en ambas máquinas porque apuntan a la misma BD
-
-## Para desplegar producción más adelante
-
-Cuando estéis listos:
-1. Desplegar backend en un entorno de producción que apunte al MySQL de Aiven.
-2. Desplegar frontend en Vercel o Netlify apuntando al backend.
-3. Mantener la BD de Aiven como base compartida.
-
-## Copia de seguridad de la BD
-
-Antes de cambios grandes, haced backup:
+- No subir `rest/rest/.env` a Git
+- Mantener solo `rest/rest/.env.example` en versionado
+- Hacer backup antes de cambios grandes:
 
 ```bash
-mysqldump -h MYSQLHOST -u MYSQLUSER -p MYSQLDATABASE > backup.sql
+mysqldump -h HOST -u USER -p DATABASE > backup.sql
 ```
 
-Si hace falta restaurar:
+Restaurar:
 
 ```bash
-mysql -h MYSQLHOST -u MYSQLUSER -p MYSQLDATABASE < backup.sql
+mysql -h HOST -u USER -p DATABASE < backup.sql
 ```
+
+## 6. Resolucion de problemas
+
+Error de validacion de esquema al arrancar:
+
+- revisar que la migracion Flyway aplicada corresponde al codigo actual
+- no editar migraciones historicas ya ejecutadas en un entorno compartido
+- para cambios de esquema nuevos, crear `V2__...sql`, `V3__...sql`, etc.
+
+Error de acceso denegado:
+
+- revisar usuario/password
+- revisar que la IP/red puede llegar al host de Aiven
+- confirmar `sslMode=REQUIRED` en `DB_URL`
+
+Frontend no conecta con backend en local:
+
+- verificar backend en puerto 8080
+- verificar frontend Vue en 5173
+- verificar proxy de Vite (`/api` -> `http://localhost:8080`)

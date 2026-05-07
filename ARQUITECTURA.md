@@ -1,345 +1,180 @@
-# Arquitectura DeTuBarrio - Guía Visual para TFG
+# Arquitectura DeTuBarrio
 
-## 1. Visión General de la Arquitectura
+## 1. Vision general
 
-DeTuBarrio es una **aplicación monolítica Spring Boot** que integra frontend estático y backend API REST en un único servidor. Esta decisión facilita el despliegue, elimina problemas de CORS.
+DeTuBarrio esta organizado como una arquitectura cliente-servidor con separacion clara entre frontend y backend:
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                 NAVEGADOR DEL USUARIO                       │
-│         (http://localhost:8080/login_db.html)              │
-└────────────────────────────┬────────────────────────────────┘
-                             │ HTTP con fetch()
-                             ▼
-┌─────────────────────────────────────────────────────────────┐
-│          Spring Boot 3 - Un solo servidor (Puerto 8080)    │
-├──────────────────────────┬──────────────────────────────────┤
-│  FRONTEND ESTÁTICO       │     BACKEND API REST            │
-│  (Controlador por URL)   │     (Controlador JSON)          │
-├──────────────────────────┼──────────────────────────────────┤
-│ • /login_db.html         │  • /api/health                  │
-│ • /comercio_individual   │  • /api/comercios               │
-│ • /gestion_usuario.html  │  • /api/auth/login              │
-│ • /gestion_comercio.html │  • /api/auth/register           │
-│ • /images, /css, /js     │  • /api/auth/me                 │
-│                          │  • /api/comentarios             │
-│                          │  • /api/dashboard/*             │
-│                          │  • /swagger-ui.html             │
-└──────────────────────────┴──────────────────────────────────┘
-                             │
-                             ▼
-        ┌────────────────────────────┐
-        │   Capa de Servicios        │
-        │  (Lógica de Negocio)       │
-        │                            │
-        │ • ComercioService          │
-        │ • AuthService              │
-        │ • ResenaService (Comentarios)
-        └────────────────────────────┘
-                             │
-                             ▼
-        ┌────────────────────────────┐
-        │   Capa de Repositorios     │
-        │  (Spring Data JPA)         │
-        │                            │
-        │ • ComercioRepository       │
-        │ • UsuarioRepository        │
-        │ • ResenaRepository         │
-        └────────────────────────────┘
-                             │
-                             ▼
-        ┌────────────────────────────┐
-        │   Base de Datos            │
-        │                            │
-        │ Local: H2 en RAM           │
-        │ Producción: MySQL          │
-        └────────────────────────────┘
+- Backend API REST en Spring Boot (carpeta `rest/rest`)
+- Frontend SPA en Vue 3 + Vite (carpeta `a/vue`)
+- Frontend legacy en HTML/CSS/JS (carpeta `a/html`)
+- Base de datos MySQL remota o local, gestionada por Flyway
+
+## 2. Diagrama logico
+
+```text
+[Usuario Navegador]
+       |
+       | HTTP(S)
+       v
+[Frontend Vue (a/vue)] ---------------------------.
+       |                                          |
+       | /api/* (proxy Vite en local)             |
+       v                                          |
+[Spring Boot API (rest/rest)]                     |
+       |                                          |
+       | JPA + Flyway                             |
+       v                                          |
+[MySQL (Aiven/local)] <---------------------------'
 ```
 
----
+Tambien existe frontend legacy (`a/html`) como soporte de maquetas, pruebas o demo independiente.
 
-## 2. Flujo de Datos: Ejemplo Real (Crear Reseña)
+## 3. Backend (Spring Boot)
 
-```
-Usuario en navegador
-      │
-      ├─ Rellena formulario en comercio_individual.html
-      │
-      └─► Click "Enviar Reseña"
-            │
-            ▼
-      comercio-detalle.js (fetch POST)
-            │
-            └─► POST /api/comentarios
-                    {
-                      "comercioId": 1,
-                      "titulo": "Excelente",
-                      "comentario": "Muy bueno",
-                      "valoracion": 5,
-                      "autorNombre": "Ana",
-                      "autorEmail": "ana@example.com"
-                    }
-                    │
-                    ▼
-            ComentarioController.java
-                    │
-                    ▼
-            ResenaService.java (lógica de negocio)
-                    │
-                    ▼
-            ResenaRepository.save()
-                    │
-                    ▼
-            H2 Database (INSERT)
-                    │
-                    ▼
-            Respuesta JSON
-            {
-              "id": 4,
-              "titulo": "Excelente",
-              ...
-              "fecha": "2026-03-20T09:01:54"
-            }
-                    │
-                    ▼
-            comercio-detalle.js (recibe respuesta)
-                    │
-                    ▼
-            Página se refresca con nueva reseña
-```
+### 3.1 Capas
 
----
+- Controller: expone endpoints REST
+- Service: logica de negocio
+- Repository: acceso a datos con Spring Data JPA
+- Security: autenticacion JWT y autorizacion por rol
+- Config: seguridad HTTP, CORS y OpenAPI
 
-## 3. Estructura de Carpetas (¿Dónde está cada cosa?)
+### 3.2 Endpoints por dominio
 
-```
-DetuBarrio/
-├── rest/rest/                              ← Proyecto Maven (donde ejecutas mvnw)
-│   ├── pom.xml                             ← Dependencias Java
-│   ├── mvnw / mvnw.cmd                     ← Script para ejecutar Maven en Windows
-│   │
-│   ├── src/main/
-│   │   ├── java/detubarrio/rest/
-│   │   │   ├── RestApplication.java        ← Clase principal (@SpringBootApplication)
-│   │   │   │
-│   │   │   ├── controller/                 ← Reciben solicitudes HTTP
-│   │   │   │   ├── ComercioController.java     (GET /api/comercios, etc)
-│   │   │   │   ├── AuthController.java        (POST /api/auth/login, etc)
-│   │   │   │   ├── ComentarioController.java  (POST /api/comentarios)
-│   │   │   │   └── DashboardController.java   (GET /api/dashboard/*)
-│   │   │   │
-│   │   │   ├── service/                    ← Lógica de negocio
-│   │   │   │   ├── ComercioService.java
-│   │   │   │   ├── AuthService.java
-│   │   │   │   └── (ResenaService si hubiera)
-│   │   │   │
-│   │   │   ├── repository/                 ← Acceso a BD (Spring Data JPA)
-│   │   │   │   ├── ComercioRepository.java
-│   │   │   │   ├── UsuarioRepository.java
-│   │   │   │   ├── ResenaRepository.java
-│   │   │   │   └── ProductoRepository.java
-│   │   │   │
-│   │   │   ├── model/                      ← Entidades JPA (tablas BD)
-│   │   │   │   ├── Comercio.java
-│   │   │   │   ├── Usuario.java
-│   │   │   │   ├── Resena.java
-│   │   │   │   ├── Producto.java
-│   │   │   │   ├── Categoria.java
-│   │   │   │   └── ComercioProducto.java
-│   │   │   │
-│   │   │   ├── dto/                        ← Contratos API (request/response)
-│   │   │   │   ├── AuthLoginRequest.java   (lo que espera POST /api/auth/login)
-│   │   │   │   ├── AuthResponse.java       (lo que devuelve con token JWT)
-│   │   │   │   ├── ComentarioRequest.java
-│   │   │   │   └── UsuarioMeResponse.java
-│   │   │   │
-│   │   │   ├── security/                   ← Autenticación JWT
-│   │   │   │   ├── JwtService.java         (genera/valida tokens)
-│   │   │   │   └── JwtAuthenticationFilter.java (intercepta solicitudes)
-│   │   │   │
-│   │   │   ├── config/                     ← Configuración
-│   │   │   │   ├── SecurityConfig.java     (define rutas públicas/privadas)
-│   │   │   │   ├── DataSeederConfig.java   (carga datos 👈 aquí están los usuarios!)
-│   │   │   │   ├── CorsConfig.java         (permitir requests del frontend)
-│   │   │   │   └── OpenApiConfig.java      (Swagger)
-│   │   │   │
-│   │   │   └── exception/
-│   │   │       └── GlobalExceptionHandler.java (manejo centralizado de errores)
-│   │   │
-│   │   └── resources/
-│   │       ├── application.properties           (config por defecto, MySQL)
-│   │       ├── application-local.properties    (config local, H2 en RAM)
-│   │       │
-│   │       └── static/                         ← 👈 FRONTEND AQUÍ
-│   │           ├── login_db.html
-│   │           ├── comercio_individual.html
-│   │           ├── gestion_usuario.html
-│   │           ├── gestion_comercio.html
-│   │           ├── js/
-│   │           │   ├── auth.js               (login/register)
-│   │           │   ├── comercio-detalle.js   (POST reseña)
-│   │           │   ├── dashboard-usuario.js
-│   │           │   └── dashboard-comercio.js
-│   │           ├── css/
-│   │           ├── images/
-│   │           └── ...
-│   │
-│   └── target/                             ← Generado al compilar (JAR, bytecode)
-│
-├── Script_corregido.sql                    ← Script SQL de referencia (MySQL 8+)
-└── ARQUITECTURA.md                         ← Este archivo
-```
+Autenticacion:
 
----
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
 
-## 4. Stack Tecnológico Explicado
+Catalogo:
 
-| Capa | Tecnología | Para Qué |
-|------|-----------|----------|
-| **BD** | H2 (desarrollo) / MySQL (producción) | Almacenar comercios, productos, reseñas, usuarios |
-| **Acceso datos** | Spring Data JPA | Mapear tablas → objetos Java (sin SQL manual) |
-| **Lógica negocio** | Servicios Java | Validar, procesar, coordinar datos |
-| **API REST** | Spring Web | Servir JSON en /api/* |
-| **Seguridad** | Spring Security + JWT | Login/register, tokens, proteger endpoints |
-| **Frontend** | HTML + Bootstrap + JavaScript vanilla | Interfaz usuario, formularios |
-| **Documentación API** | Swagger/OpenAPI | Visualizar y probar endpoints en /swagger-ui.html |
+- `GET /api/categorias`
+- `POST /api/categorias`
+- `GET /api/comercios`
+- `GET /api/comercios/{comercioId}`
+- `POST /api/comercios`
+- `GET /api/comercios/{comercioId}/productos`
+- `POST /api/comercios/{comercioId}/productos`
 
----
+Reseñas/comentarios:
 
-## 5. Flujo de Autenticación (Login)
+- `POST /api/comentarios`
+- `GET /api/comercios/{comercioId}/resenas`
+- `POST /api/comercios/{comercioId}/resenas`
 
-```
-1. Usuario abre http://localhost:8080/login_db.html
-                                        ↓
-2. Rellena email y contraseña, click "Login"
-                                        ↓
-3. auth.js hace POST /api/auth/login
-   Body: { "email": "ana@detubarrio.local", "password": "123456" }
-                                        ↓
-4. AuthController recibe y pasa a AuthService
-                                        ↓
-5. AuthService:
-   a. Busca usuario en BD por email
-   b. Compara contraseña (BCrypt)
-   c. Si coincide, crea JWT token
-   d. Devuelve: { "token": "eyJ...", "rol": "USUARIO" }
-                                        ↓
-6. JavaScript guarda token en localStorage
-                                        ↓
-7. Próximas solicitudes:
-   Header: Authorization: Bearer eyJ...
-                                        ↓
-8. JwtAuthenticationFilter intercepta, valida token
-   Si es válido → permite acceso
-   Si no → devuelve 401 Unauthorized
-```
+Dashboard:
 
----
+- `GET /api/dashboard/usuario`
+- `GET /api/dashboard/comercio`
+- `DELETE /api/dashboard/comercio`
 
-## 6. Rutas Públicas vs Protegidas
+Contacto:
 
-```
-PÚBLICAS (no necesitan token):
-  ✓ GET  /                        (home)
-  ✓ GET  /login_db.html           (página login)
-  ✓ GET  /api/health              (comprobar servidor)
-  ✓ GET  /api/comercios           (listar tiendas)
-  ✓ POST /api/auth/login          (login)
-  ✓ POST /api/auth/register       (registro)
-  ✓ POST /api/comentarios         (crear reseña sin login)
-  ✓ GET  /swagger-ui.html         (documentación)
+- `POST /api/contacto/mensaje`
+- `POST /api/contacto/colaboracion`
 
-PROTEGIDAS (requieren JWT válido):
-  🔒 GET  /api/auth/me                   (datos usuario actual)
-  🔒 GET  /api/dashboard/usuario         (panel usuario)
-  🔒 GET  /api/dashboard/comercio/{id}   (panel comercio)
-  🔒 POST /api/comercios/{id}/productos  (añadir producto)
-```
+Admin:
 
----
+- `GET /api/admin/comercios-pendientes`
+- `POST /api/admin/comercios/aprobar`
+- `POST /api/admin/comercios/rechazar`
+- `GET /api/admin/contacto/mensajes`
+- `GET /api/admin/contacto/colaboraciones`
+- `POST /api/admin/contacto/colaboraciones/aprobar`
+- `POST /api/admin/contacto/colaboraciones/rechazar`
 
-## 7. Para la Presentación: Explicación de 5 Minutos
+Infra:
 
-### Slide 1: "¿Qué es DeTuBarrio?"
-> Plataforma digital para apoyar comercios locales de barrio. Permite:
-> - Catálogo de tiendas y productos
-> - Reseñas y valoraciones
-> - Autenticación de usuarios y comercios
-> - Dashboards personalizados por rol
+- `GET /api/health`
+- `GET /swagger-ui.html`
+- `GET /api-docs`
 
-### Slide 2: "Arquitectura - Monolítica"
-```
-Un servidor Spring Boot sirve:
-  → Frontend estático (HTML/CSS/JS) en /
-  → Backend API REST en /api
-  → Documentación Swagger en /swagger-ui.html
-```
+### 3.3 Seguridad
 
-### Slide 3: "Cómo Funciona"
-1. Usuario abre navegador → recibe HTML/CSS/JS
-2. Hace clic en botón → JavaScript hace fetch a /api/*
-3. Backend procesa, consulta BD, devuelve JSON
-4. JavaScript actualiza la página
+Segun configuracion actual:
 
-### Slide 4: "Stack"
-- **Backend:** Java 21, Spring Boot 3, Spring Security, JWT
-- **BD:** H2 (desarrollo), MySQL (producción)
-- **Frontend:** HTML, Bootstrap 5, JavaScript vanilla
-- **Documentación:** Swagger/OpenAPI
+- sesion stateless con JWT
+- `register` y `login` publicos
+- `me`, `dashboard` y `comentarios` autenticados
+- `/api/admin/**` restringido a rol ADMIN
+- CORS abierto por patron para desarrollo (`*`)
 
-### Slide 5: "Demo"
-1. Mostrar http://localhost:8080/login_db.html → Login con `ana@detubarrio.local`
-2. Mostrar dashboard usuario
-3. Ir a tienda → Postear reseña
-4. Mostrar http://localhost:8080/swagger-ui.html → Listar endpoints
+## 4. Datos y migraciones
 
----
+- Base de datos: MySQL
+- Migracion inicial: `V1__all_in_one.sql`
+- Estrategia: `spring.jpa.hibernate.ddl-auto=validate`
+- Flyway controla estructura e inserts iniciales
 
-## 8. Decisiones de Diseño y Por Qué
+Implicaciones:
 
-| Decisión | Razón |
-|----------|-------|
-| **Monolítico vs Microservicios** | Es un TFG, monolítico es rápido de desplegar sin complejidad |
-| **H2 en desarrollo** | No requiere servidor MySQL instalado, datos se recrE
+- la estructura se versiona con SQL (no con auto-creation de Hibernate)
+- para nuevos cambios de esquema se deben crear migraciones nuevas (`V2`, `V3`, etc.)
 
-an limpios cada inicio |
-| **JWT sin sesiones** | Stateless, escalable, sin necesidad de BD de sesiones |
-| **DTOs (no entidades directas)** | Separar modelo BD de contrato API, flexibilidad |
-| **Spring Data JPA** | Menos SQL manual, más productividad |
-| **Frontend integrado en static/** | Deployment simple, un único JAR/servidor |
-| **Bootstrap en lugar de custom CSS** | Prototipado rápido, responsive sin esfuerzo |
+## 5. Configuracion de entorno
 
----
+El backend carga variables desde `rest/rest/.env` mediante:
 
-## 9. Cómo Explicar Cada Componente
+- `spring.config.import=optional:file:.env[.properties]`
 
-**Si te preguntan por ComercioService:**
-> "Contiene la lógica de negocio. Por ejemplo, cuando alguien lista tiendas, ComercioService calcula la puntuación media sumando todas las reseñas, y esto es más eficiente que hacerlo en la BD o en JavaScript."
+Variables clave:
 
-**Si te preguntan por DTOs:**
-> "No devolví la entidad JPA directamente por seguridad. Un DTO (Data Transfer Object) es un contrato que define exactamente qué campos envío al cliente, evitando exponer campos sensibles."
+- `DB_URL`
+- `DB_USER`
+- `DB_PASSWORD`
+- `APP_JWT_SECRET`
+- `APP_JWT_EXPIRATION`
 
-**Si te preguntan por JWT:**
-> "Después de login, genero un token JWT cifrado que el cliente almacena. En cada solicitud protegida, el cliente envía el token en el header Authorization, y el servidor lo valida sin consultar la BD; es stateless y escalable."
+Buenas practicas:
 
-**Si te preguntan por H2:**
-> "En desarrollo uso H2 (en RAM) para no depender de MySQL. Cada vez que reinicio, tengo datos limpios. Si fuera producción, cambiaría a MySQL con conexión persistente."
+- mantener `.env` fuera de Git
+- compartir solo `.env.example`
 
----
+## 6. Frontend Vue
 
-## 10. Próximas Mejoras (Si Te Preguntan)
+### 6.1 Estructura
 
-1. **Tests de integración** - Validar endpoints con RestAssured
-2. **Paginación** - `/api/comercios?page=0&size=10`
-3. **Búsqueda avanzada** - Filtrar por categoría, nombre, precio
-4. **Carrito de compra** - Nueva tabla `Compra` con líneas
-5. **Imagen en S3** - En lugar de `/images/` local
-6. **Dockerización** - `docker build` y `docker run`
+- `a/vue/src/views`: vistas por pagina
+- `a/vue/src/services`: cliente HTTP hacia backend
+- `a/vue/src/router/index.js`: rutas y guards por rol
+- `a/vue/vite.config.js`: proxy `/api` hacia backend local
 
----
+### 6.2 Flujo de autenticacion
 
-**Última cosa:** cuando presentes, abre dos ventanas:
-- Ventana 1: Terminal con `.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=local"`
-- Ventana 2: Navegador en http://localhost:8080
+- login en `/login`
+- se guarda token JWT en `localStorage` (`detubarrio_auth`)
+- interceptor axios añade `Authorization: Bearer ...`
+- guard de rutas redirige segun rol
 
-Así demuestras que el servidor arranca limpio, datos se cargan, y el frontend funciona en vivo. 🎯
+## 7. Frontend legacy
+
+`a/html` mantiene version no SPA con paginas estaticas (login, listado, contacto, dashboards). Es util para:
+
+- demos puntuales
+- comparacion de UX
+- soporte mientras se completa migracion a Vue
+
+## 8. Decisiones de arquitectura
+
+- Monorepo con backend + dos frontends para evolucion gradual
+- Flyway como fuente de verdad del esquema
+- JWT para autenticacion sin estado en servidor
+- Separacion clara de capas para mantenibilidad
+- Configuracion por variables de entorno para despliegues flexibles
+
+## 9. Riesgos tecnicos y recomendaciones
+
+Riesgos actuales:
+
+- CORS demasiado abierto para produccion
+- coexistencia de dos frontends puede duplicar mantenimiento
+- falta de pipeline de pruebas automatizadas visible en repositorio
+
+Recomendaciones:
+
+1. endurecer CORS y cabeceras para produccion
+2. cerrar estrategia de frontend principal (Vue) y acotar legacy
+3. definir flujo de migraciones incremental (sin editar historico)
+4. incorporar tests de integracion de endpoints criticos
+5. documentar checklist de release y rollback
