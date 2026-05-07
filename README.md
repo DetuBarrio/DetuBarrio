@@ -1,4 +1,4 @@
-# DeTuBarrio - MVP Backend + Frontend
+# DeTuBarrio - MVP Backend + Frontend.
 
 Aplicacion TFG (2DAW) con API REST, autenticacion JWT, reseñas y frontend Bootstrap conectado.
 
