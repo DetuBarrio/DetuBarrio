@@ -124,10 +124,10 @@ Con el backend encendido:
 Si quieres que tu companero y tu veais exactamente los mismos datos en todo momento,
 no useis dos MySQL locales distintas. Usad una sola MySQL remota compartida.
 
-Flujo recomendado en Railway:
+Flujo recomendado en Aiven:
 
-1. En Railway, crear un proyecto y anadir el servicio MySQL.
-2. En Railway, abrir el servicio MySQL y copiar estas variables:
+1. En Aiven, crear un proyecto y anadir el servicio MySQL.
+2. En Aiven, abrir la conexion del servicio y copiar estas variables:
 	- MYSQLHOST
 	- MYSQLPORT
 	- MYSQLDATABASE
@@ -135,6 +135,14 @@ Flujo recomendado en Railway:
 	- MYSQLPASSWORD
 3. Editar el archivo [rest/rest/.env](rest/rest/.env) del proyecto con esos valores reales.
 4. Confirmar que ambos teneis el mismo valor de `APP_JWT_SECRET` en ese `.env`.
+
+	Para generar un secreto seguro en PowerShell y copiarlo en `APP_JWT_SECRET` puedes usar:
+
+```powershell
+[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 }))
+```
+
+	Copia la salida y pégala como valor de `APP_JWT_SECRET` en `rest/rest/.env` en ambos equipos.
 5. Arrancar backend (Spring carga `.env` automaticamente):
 
 ```powershell
@@ -146,7 +154,7 @@ Con esto ambos backends conectan a la misma base y los cambios de datos se refle
 
 Consejos importantes para evitar problemas:
 
-- Mantened el mismo valor de APP_JWT_SECRET en ambos equipos.
+- Mantened el mismo valor de APP_JWT_SECRET en ambos equipos; si cambia, los tokens JWT emitidos por un backend dejan de validar en el otro.
 - Mantened la misma zona horaria en la URL JDBC (`serverTimezone=UTC`).
 - Haced una copia de seguridad diaria de la base remota (`mysqldump`) antes de pruebas grandes.
 - Si quereis resetear datos de demo, hacedlo una sola vez sobre la base compartida y avisad al equipo.

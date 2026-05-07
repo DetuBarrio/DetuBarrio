@@ -152,7 +152,7 @@ CREATE TABLE resena (
     titulo VARCHAR(80) NOT NULL,
     comentario VARCHAR(255),
     fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    valoracion TINYINT NOT NULL,
+    valoracion INT NOT NULL,
     autor_nombre VARCHAR(100) NOT NULL,
     autor_email VARCHAR(150),
     id_cliente BIGINT,
