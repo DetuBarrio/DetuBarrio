@@ -1,10 +1,6 @@
--- Flyway V1: Esquema completo + V2 ajustes + seed minimal
--- Uso: Flyway ejecutará esta migración al arrancar la aplicación sobre la BD configurada.
--- IMPORTANTE: No usar `CREATE DATABASE` ni `USE` aquí; Flyway aplica migraciones sobre la base de datos objetivo.
+-- Script corregido de base de datos para DeTuBarrio
+-- Motor objetivo: MySQL 8+
 
--- =====================
--- Esquema (Tablas principales)
--- =====================
 CREATE TABLE persona (
     id_persona BIGINT PRIMARY KEY AUTO_INCREMENT,
     nombre VARCHAR(100) NOT NULL,
@@ -19,12 +15,11 @@ CREATE TABLE persona (
 
 CREATE TABLE usuario (
     id_usuario BIGINT PRIMARY KEY AUTO_INCREMENT,
-    username VARCHAR(100) NOT NULL UNIQUE,
+    nombre VARCHAR(120) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
-    fecha_registro DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    rol ENUM('ADMIN', 'BASICO') NOT NULL DEFAULT 'BASICO',
-    id_persona BIGINT NOT NULL,
-    CONSTRAINT fk_usuario_persona FOREIGN KEY (id_persona) REFERENCES persona(id_persona)
+    rol ENUM('ADMIN', 'USUARIO', 'COMERCIO') NOT NULL,
+    id_comercio BIGINT NULL
 );
 
 CREATE TABLE trabajador (
@@ -63,9 +58,18 @@ CREATE TABLE comercio (
     dias_apertura VARCHAR(100),
     logo VARCHAR(255),
     banner VARCHAR(255),
+    estado VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
+    gestion_autorizada BOOLEAN NOT NULL DEFAULT FALSE,
+    fecha_solicitud DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    motivo_rechazo VARCHAR(500),
+    motivo_bloqueo_gestion VARCHAR(500),
+    id_usuario_creador BIGINT,
     id_categoria BIGINT NOT NULL,
-    CONSTRAINT fk_comercio_categoria FOREIGN KEY (id_categoria) REFERENCES categoria(id_categoria)
+    CONSTRAINT fk_comercio_categoria FOREIGN KEY (id_categoria) REFERENCES categoria(id_categoria),
+    CONSTRAINT fk_comercio_usuario_creador FOREIGN KEY (id_usuario_creador) REFERENCES usuario(id_usuario)
 );
+
+CREATE INDEX idx_comercio_estado ON comercio(estado);
 
 CREATE TABLE estadisticas (
     id_estadistica BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -113,7 +117,34 @@ CREATE TABLE compra (
 CREATE TABLE producto (
     id_producto BIGINT PRIMARY KEY AUTO_INCREMENT,
     nombre_producto VARCHAR(100) NOT NULL,
-    descripcion VARCHAR(255)
+    descripcion VARCHAR(255),
+    imagen VARCHAR(255)
+);
+
+CREATE TABLE mensaje_contacto (
+    id_mensaje_contacto BIGINT PRIMARY KEY AUTO_INCREMENT,
+    nombre VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL,
+    asunto VARCHAR(120) NOT NULL,
+    tipo VARCHAR(40) NOT NULL,
+    mensaje VARCHAR(2000) NOT NULL,
+    fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE solicitud_colaboracion (
+    id_solicitud_colaboracion BIGINT PRIMARY KEY AUTO_INCREMENT,
+    nombre_comercio VARCHAR(120) NOT NULL,
+    nombre_titular VARCHAR(120) NOT NULL,
+    email_comercio VARCHAR(150) NOT NULL,
+    telefono_comercio VARCHAR(30) NOT NULL,
+    categoria VARCHAR(80) NOT NULL,
+    descripcion VARCHAR(3000),
+    id_comercio_origen BIGINT,
+    estado ENUM('PENDIENTE', 'APROBADA', 'RECHAZADA') NOT NULL DEFAULT 'PENDIENTE',
+    motivo_rechazo VARCHAR(500),
+    fecha_resolucion DATETIME,
+    terminos_aceptados BOOLEAN NOT NULL DEFAULT FALSE,
+    fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE resena (
@@ -169,68 +200,103 @@ CREATE TABLE comercio_producto (
     CONSTRAINT fk_comercio_producto_producto FOREIGN KEY (id_producto) REFERENCES producto(id_producto)
 );
 
--- =====================
--- V2: ajustes sobre comercio (estado, fecha_solicitud, motivo_rechazo, id_usuario_creador)
--- =====================
-ALTER TABLE comercio
-  ADD COLUMN estado VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
-  ADD COLUMN fecha_solicitud DATETIME NULL,
-  ADD COLUMN motivo_rechazo VARCHAR(500),
-  ADD COLUMN id_usuario_creador BIGINT;
-
-ALTER TABLE comercio
-  ADD CONSTRAINT fk_comercio_usuario_creador FOREIGN KEY (id_usuario_creador) REFERENCES usuario(id_usuario);
-
-CREATE INDEX idx_comercio_estado ON comercio(estado);
-
--- Rellenar fecha_solicitud si faltase
-UPDATE comercio
-SET fecha_solicitud = COALESCE(fecha_solicitud, CURRENT_TIMESTAMP)
-WHERE fecha_solicitud IS NULL;
-
--- Actualizar comercios existentes a APROBADO si estaban sin estado y sin creador
-UPDATE comercio SET estado = 'APROBADO' WHERE estado = 'PENDIENTE' AND id_usuario_creador IS NULL;
-
--- =====================
--- Seed minimal reproducible
--- =====================
--- Personas
-INSERT INTO persona (id_persona, nombre, apellidos, email, telefono, direccion, ciudad, codigo_postal, foto_perfil) VALUES
-(1, 'Ana', 'García', 'ana@detubarrio.local', '600111222', 'C/ Mayor 1', 'Oviedo', '33001', '/images/ana.jpg'),
-(2, 'Pablo', 'López', 'pablo@detubarrio.local', '600333444', 'C/ Luna 2', 'Gijón', '33002', '/images/pablo.jpg');
-
--- Usuarios (hashes de ejemplo; asegurar algoritmo BCrypt en la app)
-INSERT INTO usuario (id_usuario, username, password_hash, fecha_registro, rol, id_persona) VALUES
-(1, 'ana', '$2a$10$7Qx1eE2y3Zq9h1Gf7kV/eOqKf1z9Yc8b0Lq1YvK6bS9uJ2c3d4eFG', '2026-05-06 10:00:00', 'ADMIN', 1),
-(2, 'pablo', '$2a$10$7Qx1eE2y3Zq9h1Gf7kV/eOqKf1z9Yc8b0Lq1YvK6bS9uJ2c3d4eFG', '2026-05-06 10:00:00', 'BASICO', 2);
-
--- Categorías
 INSERT INTO categoria (id_categoria, nombre_categoria, descripcion) VALUES
-(1, 'Hostelería', 'Restaurantes, cafeterías y bares'),
-(2, 'Comercio', 'Tiendas y comercios minoristas');
+    (1, 'Hosteleria', 'Bares, cafeterias y restaurantes'),
+    (2, 'Panaderia', 'Pan y bolleria artesanal'),
+    (3, 'Ferreteria', 'Bricolaje y hogar')
+;
 
--- Comercios
-INSERT INTO comercio (id_comercio, nombre_comercio, descripcion, horario, dias_apertura, logo, banner, id_categoria, estado, fecha_solicitud) VALUES
-(1, 'Café Central', 'Cafetería con productos locales y terraza', '08:00-22:00', 'Lunes-Domingo', '/images/logo_central.png', '/images/banner_central.jpg', 1, 'APROBADO', CURRENT_TIMESTAMP);
+INSERT INTO usuario (id_usuario, nombre, email, password_hash, rol, id_comercio) VALUES
+    (1, 'Admin DeTuBarrio', 'admin@detubarrio.local', '$2a$10$7Qx1eE2y3Zq9h1Gf7kV/eOqKf1z9Yc8b0Lq1YvK6bS9uJ2c3d4eFG', 'ADMIN', NULL),
+    (2, 'Ana Garcia', 'ana@detubarrio.local', '$2a$10$7Qx1eE2y3Zq9h1Gf7kV/eOqKf1z9Yc8b0Lq1YvK6bS9uJ2c3d4eFG', 'USUARIO', NULL),
+    (3, 'Panaderia El Trigal', 'trigal@detubarrio.local', '$2a$10$7Qx1eE2y3Zq9h1Gf7kV/eOqKf1z9Yc8b0Lq1YvK6bS9uJ2c3d4eFG', 'COMERCIO', 1)
+;
 
--- Estadísticas básicas
-INSERT INTO estadisticas (id_estadistica, numero_visitas, puntuacion_media, total_ventas, id_comercio) VALUES
-(1, 1250, 4.5, 320, 1);
+INSERT INTO comercio (
+    id_comercio,
+    nombre_comercio,
+    descripcion,
+    horario,
+    dias_apertura,
+    logo,
+    banner,
+    estado,
+    gestion_autorizada,
+    fecha_solicitud,
+    motivo_rechazo,
+    motivo_bloqueo_gestion,
+    id_usuario_creador,
+    id_categoria
+) VALUES (
+    1,
+    'Panaderia El Trigal',
+    'Panaderia familiar con masa madre y bolleria artesanal',
+    'L-S 08:00 - 20:00',
+    'Lunes a Sabado',
+    'images/trigal.png',
+    'images/panaderia.png',
+    'APROBADO',
+    TRUE,
+    CURRENT_TIMESTAMP,
+    NULL,
+    NULL,
+    1,
+    2
+);
 
--- Cliente
-INSERT INTO cliente (id_cliente, ultimo_acceso, estado, nivel, id_persona) VALUES
-(1, NOW(), TRUE, 'PRO', 2);
+ALTER TABLE usuario
+    ADD CONSTRAINT fk_usuario_comercio FOREIGN KEY (id_comercio) REFERENCES comercio(id_comercio);
 
--- Productos
-INSERT INTO producto (id_producto, nombre_producto, descripcion) VALUES
-(1, 'Café Espresso', 'Café espresso de tueste medio, servido en taza pequeña');
+INSERT INTO producto (id_producto, nombre_producto, descripcion, imagen) VALUES
+    (1, 'Pan de Masa Madre', 'Hogaza de fermentacion lenta', 'images/pan.png'),
+    (2, 'Croissant de Mantequilla', 'Croissant artesanal', 'images/croissant.png'),
+    (3, 'Menu del Dia', 'Primer plato, segundo y postre', 'images/menu.png'),
+    (4, 'Kit Basico Bricolaje', 'Set de herramientas para casa', 'images/herramientas.png')
+;
 
--- Comercio-Producto
 INSERT INTO comercio_producto (id_comercio_producto, id_comercio, id_producto, stock, precio) VALUES
-(1, 1, 1, 120, 1.50);
+    (1, 1, 1, 20, 3.50),
+    (2, 1, 2, 40, 1.80),
+    (3, 1, 3, 50, 14.90),
+    (4, 1, 4, 15, 29.99)
+;
 
--- Reseña
 INSERT INTO resena (id_resena, titulo, comentario, fecha, valoracion, autor_nombre, autor_email, id_cliente, id_comercio) VALUES
-(1, 'Excelente café', 'Ambiente agradable y personal atento.', NOW(), 5, 'Pablo López', 'pablo@detubarrio.local', 1, 1);
+    (1, 'Excelente trato', 'Muy buena calidad y servicio rapido', CURRENT_TIMESTAMP, 5, 'Ana Garcia', 'ana@example.com', NULL, 1),
+    (2, 'Todo perfecto', 'Pan recien hecho y muy rico', CURRENT_TIMESTAMP, 4, 'Carlos Ruiz', 'carlos@example.com', NULL, 1),
+    (3, 'Recomendado', 'Comida casera con buen precio', CURRENT_TIMESTAMP, 5, 'Lucia M', 'lucia@example.com', NULL, 1)
+;
 
--- Fin V1 all-in-one
+INSERT INTO mensaje_contacto (id_mensaje_contacto, nombre, email, asunto, tipo, mensaje, fecha_creacion) VALUES
+    (1, 'Pablo Lopez', 'pablo@example.com', 'Consulta general', 'INFORMACION', 'Quiero saber como dar de alta mi comercio.', CURRENT_TIMESTAMP)
+;
+
+INSERT INTO solicitud_colaboracion (
+    id_solicitud_colaboracion,
+    nombre_comercio,
+    nombre_titular,
+    email_comercio,
+    telefono_comercio,
+    categoria,
+    descripcion,
+    id_comercio_origen,
+    estado,
+    motivo_rechazo,
+    fecha_resolucion,
+    terminos_aceptados,
+    fecha_creacion
+) VALUES (
+    1,
+    'Taller Barrio Norte',
+    'Marta Ruiz',
+    'marta@tallernorte.local',
+    '600123123',
+    'Ferreteria',
+    'Solicitud para colaborar y publicar productos del taller.',
+    1,
+    'PENDIENTE',
+    NULL,
+    NULL,
+    TRUE,
+    CURRENT_TIMESTAMP
+);
