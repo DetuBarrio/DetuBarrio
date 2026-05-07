@@ -119,6 +119,38 @@ Con el backend encendido:
 - Flyway aplica la migración única `V1__all_in_one.sql` al arrancar el backend.
 - El arranque no depende de `Script_corregido.sql` ni de scripts manuales sueltos.
 
+## Base compartida para trabajar en equipo
+
+Si quieres que tu companero y tu veais exactamente los mismos datos en todo momento,
+no useis dos MySQL locales distintas. Usad una sola MySQL remota compartida.
+
+Flujo recomendado en Railway:
+
+1. En Railway, crear un proyecto y anadir el servicio MySQL.
+2. En Railway, abrir el servicio MySQL y copiar estas variables:
+	- MYSQLHOST
+	- MYSQLPORT
+	- MYSQLDATABASE
+	- MYSQLUSER
+	- MYSQLPASSWORD
+3. Editar el archivo [rest/rest/.env](rest/rest/.env) del proyecto con esos valores reales.
+4. Confirmar que ambos teneis el mismo valor de `APP_JWT_SECRET` en ese `.env`.
+5. Arrancar backend (Spring carga `.env` automaticamente):
+
+```powershell
+cd rest/rest
+.\mvnw.cmd spring-boot:run
+```
+
+Con esto ambos backends conectan a la misma base y los cambios de datos se reflejan para los dos.
+
+Consejos importantes para evitar problemas:
+
+- Mantened el mismo valor de APP_JWT_SECRET en ambos equipos.
+- Mantened la misma zona horaria en la URL JDBC (`serverTimezone=UTC`).
+- Haced una copia de seguridad diaria de la base remota (`mysqldump`) antes de pruebas grandes.
+- Si quereis resetear datos de demo, hacedlo una sola vez sobre la base compartida y avisad al equipo.
+
 ## Siguientes mejoras recomendadas
 
 ** Ahora mismo el desarrollo del proyecto esta en fase beta, es decir hay cierta parte funcional ya pero requiere de tiempo para pulir y desarrollar todo lo demas **
