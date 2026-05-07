@@ -133,7 +133,13 @@ Flujo recomendado en Aiven:
 	- MYSQLDATABASE
 	- MYSQLUSER
 	- MYSQLPASSWORD
-3. Editar el archivo [rest/rest/.env](rest/rest/.env) del proyecto con esos valores reales.
+3. Crear el archivo local [rest/rest/.env](rest/rest/.env) copiando [rest/rest/.env.example](rest/rest/.env.example) y completar valores reales de Aiven.
+
+```powershell
+cd rest/rest
+Copy-Item .env.example .env
+```
+
 4. Confirmar que ambos teneis el mismo valor de `APP_JWT_SECRET` en ese `.env`.
 
 	Para generar un secreto seguro en PowerShell y copiarlo en `APP_JWT_SECRET` puedes usar:
