@@ -129,4 +129,4 @@ Generar secreto seguro en PowerShell:
 - Backend validado conectando a Aiven (`detubarrio_dev`)
 - Migraciones Flyway aplicadas correctamente
 - Frontend Vue listo para trabajar en local
-- Documentacion alineada a la arquitectura real del repositorio
+- Documentacion alineada a la arquitectura real del repositorio.
