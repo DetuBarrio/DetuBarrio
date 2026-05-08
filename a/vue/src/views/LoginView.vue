@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import logoOg from '../assets/images/logo_og.png'
-import { getAuth, login } from '../services/authService'
+import { getAuth, login, saveAuth } from '../services/authService'
 
 const router = useRouter()
 const route = useRoute()
@@ -34,7 +34,14 @@ function syncTabFromRoute() {
 }
 
 function redirectByRole(auth) {
-  router.replace(auth.rol === 'ADMIN' ? { name: 'admin' } : { name: 'home' })
+  if (auth.rol === 'ADMIN') {
+    router.replace({ name: 'admin' })
+  } else if (auth.rol === 'COMERCIO') {
+    
+    router.replace('/dashboard/comercio') 
+  } else {
+    router.replace({ name: 'home' })
+  }
 }
 
 async function handleLogin() {
@@ -104,11 +111,21 @@ async function handleRegister() {
       throw new Error(body?.details?.[0] || body?.error || 'No se pudo completar el registro')
     }
 
+    // 1. Obtenemos los datos de autenticación (usuario + token) tras el registro exitoso
     const auth = await response.json()
+
+    // 2. GUARDAR SESIÓN: Esta es la clave para que el Navbar cambie automáticamente
+    saveAuth(auth)
+
     successMessage.value = crearNuevoComercio.value 
       ? 'Registro completado. Tu comercio está pendiente de aprobación. Redirigiendo...'
       : 'Registro completado. Redirigiendo...'
-    setTimeout(() => redirectByRole(auth), 400)
+
+    // 3. Redirigimos al usuario según su rol
+    setTimeout(() => {
+      redirectByRole(auth)
+    }, 1200) // Un poco más de tiempo para que el usuario lea el mensaje de éxito
+
   } catch (error) {
     registerErrorMessage.value = error?.message || 'No se pudo completar el registro'
   } finally {
