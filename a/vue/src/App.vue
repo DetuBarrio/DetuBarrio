@@ -1,10 +1,11 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { RouterView, RouterLink } from 'vue-router'
+import { RouterView, RouterLink, useRouter } from 'vue-router'
 import HomeView from './views/HomeView.vue'
 import logoOg from './assets/images/logo_og.png'
 import { clearAuth, getAuth } from './services/authService'
 
+const router = useRouter()
 const auth = ref(getAuth())
 
 function syncAuth() {
@@ -26,6 +27,7 @@ onUnmounted(() => {
 
 function handleLogout() {
   clearAuth()
+  router.push('/')
 }
 
 </script>
