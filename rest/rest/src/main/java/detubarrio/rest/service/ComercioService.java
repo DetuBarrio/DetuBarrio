@@ -14,18 +14,33 @@ import detubarrio.rest.model.Producto;
 import detubarrio.rest.repository.CategoriaRepository;
 import detubarrio.rest.repository.ComercioProductoRepository;
 import detubarrio.rest.repository.ComercioRepository;
-import detubarrio.rest.repository.ProductoRepository;
+import detubarrio.rest.repository.ProductoRepository;   
 import detubarrio.rest.repository.ResenaRepository;
+
+// CORRECCIÓN DE IMPORTS:
+import java.io.IOException; // Usar el de Java estándar, no el de JWT
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+
+import jakarta.persistence.EntityNotFoundException;
+// Eliminados: Path de criterios y Paths de Swagger que daban conflicto
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.UUID;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class ComercioService {
+
+    private final String UPLOAD_DIR = "uploads/";   
 
     @Autowired
     private ComercioRepository comercioRepository;
@@ -57,14 +72,66 @@ public class ComercioService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional // <- No olvides añadir esto arriba del método
+    public ComercioDetailResponse actualizarConFotos(Long id, String nombre, String descripcion, 
+                                                        String horario, String diasApertura, 
+                                                        MultipartFile logo, MultipartFile banner) {
+        
+        Comercio comercio = comercioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Comercio no encontrado"));
+
+        comercio.setNombreComercio(nombre);
+        comercio.setDescripcion(descripcion);
+        comercio.setHorario(horario);
+        comercio.setDiasApertura(diasApertura);
+
+        try {
+                if (logo != null && !logo.isEmpty()) {
+                String nombreLogo = guardarArchivo(logo);
+                comercio.setLogo("/uploads/" + nombreLogo);
+                }
+                if (banner != null && !banner.isEmpty()) {
+                String nombreBanner = guardarArchivo(banner);
+                comercio.setBanner("/uploads/" + nombreBanner);
+                }
+        } catch (IOException e) {
+                throw new RuntimeException("Error al guardar las imágenes", e);
+        }
+
+        comercio = comercioRepository.save(comercio);
+        
+        return toDetailResponse(comercio); 
+    }
+
+    private String guardarArchivo(MultipartFile archivo) throws IOException {
+        Path root = Paths.get(UPLOAD_DIR);
+
+        if (!Files.exists(root)) {
+            Files.createDirectories(root);
+        }
+
+        String nombreOriginal = archivo.getOriginalFilename();
+        String extension = "";
+        if (nombreOriginal != null && nombreOriginal.contains(".")) {
+            extension = nombreOriginal.substring(nombreOriginal.lastIndexOf("."));
+        }
+        
+        String nombreUnico = UUID.randomUUID().toString() + extension;
+        Path destino = root.resolve(nombreUnico);
+
+        Files.copy(archivo.getInputStream(), destino, StandardCopyOption.REPLACE_EXISTING);
+
+        return nombreUnico;
+    }
+
     @Transactional(readOnly = true)
     public ComercioDetailResponse obtenerComercio(Long comercioId) {
         Comercio comercio = comercioRepository.findById(comercioId)
                 .orElseThrow(() -> new RuntimeException("Comercio no encontrado"));
 
-                if (comercio.getEstado() != EstadoComercio.APROBADO || !comercio.isGestionAutorizada()) {
-                        throw new RuntimeException("Comercio no disponible");
-                }
+        if (comercio.getEstado() != EstadoComercio.APROBADO || !comercio.isGestionAutorizada()) {
+            throw new RuntimeException("Comercio no disponible");
+        }
 
         return toDetailResponse(comercio);
     }
@@ -81,10 +148,43 @@ public class ComercioService {
                 .logo(request.logo())
                 .banner(request.banner())
                 .categoria(categoria)
+                .estado(EstadoComercio.PENDIENTE) // Importante: por defecto al crear
+                .gestionAutorizada(true)
                 .build();
                 
         comercio = comercioRepository.save(comercio);
         return toSummaryResponse(comercio);
+    }
+
+    @Transactional
+    public ComercioDetailResponse actualizarComercio(Long comercioId, ComercioRequest request) {
+        Comercio comercio = comercioRepository.findById(comercioId)
+            .orElseThrow(() -> new EntityNotFoundException("No existe el comercio con id " + comercioId));
+
+        // CORRECCIÓN: Usar métodos del Record (sin "get")
+        comercio.setNombreComercio(request.nombreComercio());
+        comercio.setDescripcion(request.descripcion());
+        comercio.setHorario(request.horario());
+        comercio.setDiasApertura(request.diasApertura());
+        comercio.setLogo(request.logo());
+        comercio.setBanner(request.banner());
+
+        if (request.categoriaId() != null) {
+            Categoria categoria = categoriaRepository.findById(request.categoriaId())
+                .orElseThrow(() -> new EntityNotFoundException("Categoría no encontrada"));
+            comercio.setCategoria(categoria);
+        }
+
+        comercio = comercioRepository.save(comercio);
+        return toDetailResponse(comercio); // Usamos tu conversor completo
+    }
+
+    @Transactional(readOnly = true)
+    public ComercioDetailResponse obtenerComercioPorUsuario(Long usuarioId) {
+        Comercio comercio = comercioRepository.findByUsuarioCreadorId(usuarioId)
+            .orElseThrow(() -> new EntityNotFoundException("Este usuario no tiene un comercio asignado"));
+        
+        return toDetailResponse(comercio); // Usamos tu conversor completo
     }
 
     @Transactional(readOnly = true)
@@ -145,7 +245,7 @@ public class ComercioService {
                 comercio.getHorario(),
                 comercio.getDiasApertura(),
                 comercio.getLogo(),
-                comercio.getCategoria().getNombreCategoria(),
+                comercio.getCategoria() != null ? comercio.getCategoria().getNombreCategoria() : "Sin categoría",
                 puntuacionMedia != null ? puntuacionMedia : 0.0,
                 totalResenas != null ? totalResenas : 0L
         );
@@ -155,7 +255,8 @@ public class ComercioService {
         Double puntuacionMedia = resenaRepository.findAverageValoracionByComercioId(comercio.getId());
         Long totalResenas = resenaRepository.countByComercioId(comercio.getId());
 
-        List<ProductoComercioResponse> productos = comercio.getComercioProductos().stream()
+        List<ProductoComercioResponse> productos = (comercio.getComercioProductos() != null) ? 
+            comercio.getComercioProductos().stream()
                 .map(cp -> new ProductoComercioResponse(
                         cp.getProducto().getId(),
                         cp.getProducto().getNombreProducto(),
@@ -164,9 +265,10 @@ public class ComercioService {
                         cp.getStock(),
                         cp.getProducto().getImagen()
                 ))
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()) : List.of();
 
-        List<ResenaResponse> resenas = comercio.getResenas().stream()
+        List<ResenaResponse> resenas = (comercio.getResenas() != null) ?
+            comercio.getResenas().stream()
                 .map(r -> new ResenaResponse(
                         r.getId(),
                         r.getTitulo(),
@@ -176,7 +278,7 @@ public class ComercioService {
                         r.getAutorEmail(),
                         r.getFecha()
                 ))
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()) : List.of();
 
         return new ComercioDetailResponse(
                 comercio.getId(),
@@ -186,11 +288,12 @@ public class ComercioService {
                 comercio.getDiasApertura(),
                 comercio.getLogo(),
                 comercio.getBanner(),
-                comercio.getCategoria().getNombreCategoria(),
+                comercio.getCategoria() != null ? comercio.getCategoria().getNombreCategoria() : "Sin categoría",
                 puntuacionMedia != null ? puntuacionMedia : 0.0,
                 totalResenas != null ? totalResenas : 0L,
                 productos,
                 resenas
         );
     }
+    
 }
