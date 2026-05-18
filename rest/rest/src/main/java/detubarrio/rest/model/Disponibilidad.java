@@ -1,12 +1,19 @@
 package detubarrio.rest.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDate; // Importante para la fecha
+import java.time.LocalDate;
 import java.time.LocalTime;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
-@Data // Esto genera getters y setters automáticamente
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Table(name = "disponibilidades")
 public class Disponibilidad {
 
@@ -14,11 +21,12 @@ public class Disponibilidad {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long comercioId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "comercio_id") // <--- CORREGIDO: Antes estaba como id_comercio
+    @JsonIgnore 
+    private Comercio comercio;
 
-    // CAMBIO AQUÍ: De String a LocalDate
     private LocalDate fecha; 
-
     private LocalTime horaInicio;
     private LocalTime horaFin;
 

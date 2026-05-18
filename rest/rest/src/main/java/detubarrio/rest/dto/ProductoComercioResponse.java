@@ -7,7 +7,7 @@ public record ProductoComercioResponse(
     String nombreProducto,
     String descripcion,
     BigDecimal precio,
-    Integer stock,
+    // Integer stock,
     String imagen
 ) {
 }

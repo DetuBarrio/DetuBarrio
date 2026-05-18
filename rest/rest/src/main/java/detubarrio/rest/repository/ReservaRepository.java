@@ -8,9 +8,11 @@ import java.util.List;
 @Repository
 public interface ReservaRepository extends JpaRepository<Reserva, Long> {
     
-    // Para que Paqui vea sus reservas
+    // Para que el Comercio vea sus reservas recibidas
     List<Reserva> findByIdComercio(Long idComercio);
     
-    // Para que el cliente vea sus propias reservas
+    // Para que el Cliente vea sus reservas solicitadas
     List<Reserva> findByIdUsuario(Long idUsuario);
+
+    void deleteByDisponibilidadId(Long idDisponibilidad);
 }
