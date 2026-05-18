@@ -13,14 +13,14 @@ const registerForm = ref({
   email: '',
   password: '',
   rol: 'USUARIO',
-  comercioId: '',
+  comercioId: null,
   nombreComercio: '',
   descripcionComercio: '',
   categoriaId: '',
 })
+
 const categorias = ref([])
 const activeTab = ref('login')
-const crearNuevoComercio = ref(false)
 const loading = ref(false)
 const registerLoading = ref(false)
 const errorMessage = ref('')
@@ -33,28 +33,54 @@ function syncTabFromRoute() {
   activeTab.value = route.query.tab === 'register' ? 'register' : 'login'
 }
 
+// Control centralizado del guardado de sesión y redirección
 function redirectByRole(auth) {
-  if (auth.rol === 'ADMIN') {
-    router.replace({ name: 'admin' })
-  } else if (auth.rol === 'COMERCIO') {
-    
-    router.replace('/dashboard/comercio') 
+  console.log("Datos recibidos en login/registro:", auth); 
+
+  // 1. Guardamos el ID del usuario
+  const idUsuario = auth.userId || auth.usuarioId || auth.id; 
+  if (idUsuario) {
+    localStorage.setItem('usuarioId', idUsuario);
+    console.log("✅ ID de Usuario guardado correctamente:", idUsuario);
   } else {
-    router.replace({ name: 'home' })
+    console.error("❌ No se encontró el ID del usuario en la respuesta.");
+  }
+
+  // 2. NUEVO CAMBIO CLAVE: Guardamos el id del Comercio si viene en la respuesta del backend
+  const idComercio = auth.comercioId || auth.idComercio;
+  if (idComercio) {
+    localStorage.setItem('comercioId', idComercio);
+    console.log("🏪 ID del Comercio guardado para la agenda:", idComercio);
+  } else {
+    console.log("ℹ️ Este usuario no tiene un comercio asociado directamente en la respuesta.");
+  }
+
+  // Lógica de redirección por roles
+  if (auth.rol === 'ADMIN') {
+    router.replace({ name: 'admin' });
+  } else if (auth.rol === 'COMERCIO') {
+    router.replace('/dashboard/comercio');
+  } else {
+    router.replace({ name: 'home' });
   }
 }
 
 async function handleLogin() {
-  loading.value = true
-  errorMessage.value = ''
-
+  loading.value = true;
+  errorMessage.value = '';
   try {
-    const auth = await login(loginForm.value.email.trim(), loginForm.value.password)
-    redirectByRole(auth)
+    const auth = await login(loginForm.value.email.trim(), loginForm.value.password);
+    
+    // Guardamos el token en la sesión general a través de tu servicio de autenticación
+    saveAuth(auth);
+
+    // Ejecutamos el almacenamiento de IDs y la redirección por roles
+    redirectByRole(auth);
   } catch (error) {
-    errorMessage.value = error?.response?.data?.details?.[0] || error?.message || 'No se pudo iniciar sesión'
+    console.error("Error en login:", error);
+    errorMessage.value = 'Error al iniciar sesión. Revisa tus credenciales.';
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
@@ -75,29 +101,25 @@ async function handleRegister() {
   successMessage.value = ''
 
   try {
+    if (registerForm.value.rol === 'COMERCIO') {
+      if (!registerForm.value.nombreComercio.trim() || !registerForm.value.categoriaId) {
+        throw new Error('Por favor, rellena los datos obligatorios del comercio')
+      }
+    }
+
     const payload = {
       nombre: registerForm.value.nombre.trim(),
       email: registerForm.value.email.trim(),
       password: registerForm.value.password,
       rol: registerForm.value.rol,
+      nombreComercio: registerForm.value.nombreComercio?.trim() || null,
+      descripcionComercio: registerForm.value.descripcionComercio?.trim() || null,
+      categoriaId: registerForm.value.categoriaId ? Number(registerForm.value.categoriaId) : null,
       comercioId: registerForm.value.comercioId ? Number(registerForm.value.comercioId) : null,
-    }
-
-    // Si es COMERCIO y quiere crear uno nuevo
-    if (registerForm.value.rol === 'COMERCIO' && crearNuevoComercio.value) {
-      if (!registerForm.value.nombreComercio.trim()) {
-        throw new Error('El nombre del comercio es requerido')
-      }
-      if (!registerForm.value.descripcionComercio.trim()) {
-        throw new Error('La descripción del comercio es requerida')
-      }
-      if (!registerForm.value.categoriaId) {
-        throw new Error('La categoría es requerida')
-      }
-      
-      payload.nombreComercio = registerForm.value.nombreComercio.trim()
-      payload.descripcionComercio = registerForm.value.descripcionComercio.trim()
-      payload.categoriaId = Number(registerForm.value.categoriaId)
+      horario: null,
+      diasApertura: null,
+      logo: null,
+      banner: null
     }
 
     const response = await fetch('/api/auth/register', {
@@ -108,23 +130,19 @@ async function handleRegister() {
 
     if (!response.ok) {
       const body = await response.json().catch(() => null)
-      throw new Error(body?.details?.[0] || body?.error || 'No se pudo completar el registro')
+      throw new Error(body?.details?.[0] || body?.error || 'Error en el registro')
     }
 
-    // 1. Obtenemos los datos de autenticación (usuario + token) tras el registro exitoso
     const auth = await response.json()
-
-    // 2. GUARDAR SESIÓN: Esta es la clave para que el Navbar cambie automáticamente
     saveAuth(auth)
 
-    successMessage.value = crearNuevoComercio.value 
-      ? 'Registro completado. Tu comercio está pendiente de aprobación. Redirigiendo...'
-      : 'Registro completado. Redirigiendo...'
+    successMessage.value = registerForm.value.rol === 'COMERCIO' 
+      ? 'Solicitud enviada. El administrador revisará tu comercio pronto.'
+      : 'Registro completado con éxito.'
 
-    // 3. Redirigimos al usuario según su rol
     setTimeout(() => {
       redirectByRole(auth)
-    }, 1200) // Un poco más de tiempo para que el usuario lea el mensaje de éxito
+    }, 1500)
 
   } catch (error) {
     registerErrorMessage.value = error?.message || 'No se pudo completar el registro'
@@ -139,7 +157,6 @@ onMounted(() => {
     redirectByRole(currentAuth)
     return
   }
-
   syncTabFromRoute()
   fetchCategorias()
 })
@@ -152,9 +169,7 @@ onMounted(() => {
         <img :src="logoOg" alt="Logo DetuBarrio" class="login-logo mb-4" />
         <span class="eyebrow">DetuBarrio</span>
         <h1>Accede a tu espacio con una experiencia clara y profesional.</h1>
-        <p>
-          Inicia sesión para entrar al panel de tu perfil o continuar para gestionar tu propio comercio.
-        </p>
+        <p>Inicia sesión para entrar al panel de tu perfil o continuar para gestionar tu propio comercio.</p>
       </div>
     </section>
 
@@ -182,109 +197,73 @@ onMounted(() => {
         </ul>
 
         <div v-if="activeTab === 'login'">
-          <p class="text-muted mb-4">Introduce tus credenciales para acceder.</p>
-
           <div v-if="errorMessage" class="alert alert-danger border-0">{{ errorMessage }}</div>
-
           <form @submit.prevent="handleLogin">
             <div class="mb-3">
               <label class="form-label">Email</label>
               <input v-model="loginForm.email" type="email" class="form-control form-control-lg" placeholder="tu.email@ejemplo.com" required>
             </div>
-
             <div class="mb-3">
               <label class="form-label">Contraseña</label>
               <input v-model="loginForm.password" type="password" class="form-control form-control-lg" placeholder="Introduce tu contraseña" required>
             </div>
-
             <button class="btn btn-primary w-100 btn-lg fw-bold" type="submit" :disabled="loading">
               {{ loading ? 'Entrando...' : 'Iniciar sesión' }}
             </button>
           </form>
-
           <div class="login-note mt-4">
             <strong>Usuario demo admin:</strong> {{ demoCredentials }}
           </div>
         </div>
 
         <div v-else>
-          <p class="text-muted mb-4">Crea tu cuenta y empieza a usar la plataforma.</p>
-
           <div v-if="registerErrorMessage" class="alert alert-danger border-0">{{ registerErrorMessage }}</div>
           <div v-if="successMessage" class="alert alert-success border-0">{{ successMessage }}</div>
-
           <form @submit.prevent="handleRegister">
             <div class="mb-3">
-              <label class="form-label">Nombre</label>
+              <label class="form-label fw-bold">¿Qué tipo de cuenta necesitas?</label>
+              <select v-model="registerForm.rol" class="form-select form-select-lg border-primary" required>
+                <option value="USUARIO">Quiero comprar / reservar (Usuario)</option>
+                <option value="COMERCIO">Tengo un negocio (Comercio)</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Tu Nombre</label>
               <input v-model="registerForm.nombre" type="text" class="form-control form-control-lg" placeholder="Tu nombre completo" required>
             </div>
-
             <div class="mb-3">
               <label class="form-label">Email</label>
               <input v-model="registerForm.email" type="email" class="form-control form-control-lg" placeholder="tu.email@ejemplo.com" required>
             </div>
-
             <div class="mb-3">
               <label class="form-label">Contraseña</label>
-              <input v-model="registerForm.password" type="password" class="form-control form-control-lg" placeholder="Crea una contraseña" required>
+              <input v-model="registerForm.password" type="password" class="form-control form-control-lg" placeholder="Mínimo 6 caracteres" required>
             </div>
 
-            <div class="mb-3">
-              <label class="form-label">Tipo de cuenta</label>
-              <select v-model="registerForm.rol" class="form-select form-select-lg" required>
-                <option value="USUARIO">Usuario</option>
-                <option value="COMERCIO">Comercio</option>
-              </select>
-            </div>
-
-            <div v-if="registerForm.rol === 'COMERCIO'" class="card bg-light mb-3">
+            <div v-if="registerForm.rol === 'COMERCIO'" class="card bg-light border-info mb-3">
               <div class="card-body">
+                <h5 class="card-title text-info mb-3">Información del Negocio</h5>
                 <div class="mb-3">
-                  <div class="form-check">
-                    <input v-model="crearNuevoComercio" type="checkbox" class="form-check-input" id="crearComercio">
-                    <label class="form-check-label" for="crearComercio">
-                      Crear nuevo comercio (será validado por un administrador)
-                    </label>
-                  </div>
+                  <label class="form-label">Nombre del comercio *</label>
+                  <input v-model="registerForm.nombreComercio" type="text" class="form-control form-control-lg" placeholder="Ej: Mi Tienda" required>
                 </div>
-
-                <div v-if="!crearNuevoComercio" class="mb-3">
-                  <label class="form-label">ID de comercio existente (opcional)</label>
-                  <input v-model="registerForm.comercioId" type="number" min="1" class="form-control form-control-lg" placeholder="Ej: 2">
+                <div class="mb-3">
+                  <label class="form-label">Descripción *</label>
+                  <textarea v-model="registerForm.descripcionComercio" class="form-control form-control-lg" rows="2" placeholder="Cuéntanos qué ofreces..." required></textarea>
                 </div>
-
-                <div v-else>
-                  <div class="alert alert-info border-0 mb-3">
-                    <p class="mb-0 small">
-                      <strong>Información importante:</strong> Tu comercio será revisado por un administrador. Solo necesitamos los datos básicos de tu negocio.
-                    </p>
-                  </div>
-
-                  <div class="mb-3">
-                    <label class="form-label">Nombre del comercio *</label>
-                    <input v-model="registerForm.nombreComercio" type="text" class="form-control form-control-lg" placeholder="Ej: Mi Tienda" required>
-                  </div>
-
-                  <div class="mb-3">
-                    <label class="form-label">Descripción *</label>
-                    <textarea v-model="registerForm.descripcionComercio" class="form-control form-control-lg" rows="2" placeholder="Describe brevemente tu comercio" required></textarea>
-                  </div>
-
-                  <div class="mb-3">
-                    <label class="form-label">Categoría *</label>
-                    <select v-model="registerForm.categoriaId" class="form-select form-select-lg" required>
-                      <option value="">Selecciona una categoría</option>
-                      <option v-for="cat in categorias" :key="cat.id" :value="cat.id">
-                        {{ cat.nombreCategoria }}
-                      </option>
-                    </select>
-                  </div>
+                <div class="mb-3">
+                  <label class="form-label">Categoría *</label>
+                  <select v-model="registerForm.categoriaId" class="form-select form-select-lg" required>
+                    <option value="">Selecciona una categoría</option>
+                    <option v-for="cat in categorias" :key="cat.id" :value="cat.id">
+                      {{ cat.nombreCategoria || cat.nombre }}
+                    </option>
+                  </select>
                 </div>
               </div>
             </div>
-
-            <button class="btn btn-outline-primary w-100 btn-lg fw-bold" type="submit" :disabled="registerLoading">
-              {{ registerLoading ? 'Registrando...' : 'Crear cuenta' }}
+            <button class="btn btn-outline-primary w-100 btn-lg fw-bold mt-2" type="submit" :disabled="registerLoading">
+              {{ registerLoading ? 'Procesando registro...' : 'Crear mi cuenta' }}
             </button>
           </form>
         </div>
@@ -294,118 +273,16 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.login-shell {
-  min-height: 100vh;
-  display: grid;
-  grid-template-columns: 1.15fr 1fr;
-  background:
-    radial-gradient(circle at top left, rgba(47, 115, 224, 0.22), transparent 30%),
-    linear-gradient(180deg, #f6f9fe 0%, #eef3fb 100%);
-}
-
-.login-hero {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem;
-  color: white;
-  background:
-    linear-gradient(110deg, rgba(6, 23, 50, 0.97) 0%, rgba(12, 39, 78, 0.92) 42%, rgba(27, 79, 153, 0.84) 100%),
-    url('../assets/images/fondo_login.png');
-  background-size: cover;
-  background-position: center right;
-  overflow: hidden;
-}
-
-.login-hero::before {
-  content: '';
-  position: absolute;
-  inset: 1.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 2rem;
-  pointer-events: none;
-}
-
-.login-hero__content {
-  position: relative;
-  max-width: 30rem;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-.login-logo {
-  width: 92px;
-  height: 92px;
-  object-fit: cover;
-  border-radius: 1.25rem;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.24);
-}
-
-.eyebrow {
-  display: inline-block;
-  margin-bottom: 1rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.72);
-}
-
-.login-hero h1 {
-  font-size: clamp(2.4rem, 4vw, 4.4rem);
-  line-height: 0.98;
-  margin-bottom: 1rem;
-  font-weight: 800;
-}
-
-.login-hero p {
-  max-width: 28rem;
-  font-size: 1.05rem;
-  color: rgba(255, 255, 255, 0.82);
-}
-
-.login-form-panel {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-}
-
-.login-card {
-  width: 100%;
-  max-width: 520px;
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 1.75rem;
-  padding: 2rem;
-}
-
-.login-note {
-  border-radius: 1rem;
-  padding: 0.9rem 1rem;
-  background: #f8fbff;
-  border: 1px solid #dbe6f7;
-  color: #16355f;
-}
-
-/* Forzar color blanco en el texto del hero de login */
-.login-hero__content,
-.login-hero__content h1,
-.login-hero__content p,
-.login-hero__content .eyebrow {
-  color: #ffffff !important;
-}
-
-@media (max-width: 991.98px) {
-  .login-shell {
-    grid-template-columns: 1fr;
-  }
-
-  .login-form-panel {
-    min-height: 100vh;
-  }
-}
+.login-shell { min-height: 100vh; display: grid; grid-template-columns: 1.15fr 1fr; background: radial-gradient(circle at top left, rgba(47, 115, 224, 0.22), transparent 30%), linear-gradient(180deg, #f6f9fe 0%, #eef3fb 100%); }
+.login-hero { position: relative; display: flex; align-items: center; justify-content: center; padding: 3rem; color: white; background: linear-gradient(110deg, rgba(6, 23, 50, 0.97) 0%, rgba(12, 39, 78, 0.92) 42%, rgba(27, 79, 153, 0.84) 100%), url('../assets/images/fondo_login.png'); background-size: cover; background-position: center right; overflow: hidden; }
+.login-hero::before { content: ''; position: absolute; inset: 1.75rem; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 2rem; pointer-events: none; }
+.login-hero__content { position: relative; max-width: 30rem; width: 100%; display: flex; flex-direction: column; align-items: center; text-align: center; color: white !important; }
+.login-logo { width: 92px; height: 92px; object-fit: cover; border-radius: 1.25rem; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.24); }
+.eyebrow { display: inline-block; margin-bottom: 1rem; letter-spacing: 0.18em; text-transform: uppercase; font-size: 0.75rem; color: rgba(255, 255, 255, 0.72) !important; }
+.login-hero h1 { font-size: clamp(2.4rem, 4vw, 4.4rem); line-height: 0.98; margin-bottom: 1rem; font-weight: 800; color: white !important; }
+.login-hero p { max-width: 28rem; font-size: 1.05rem; color: rgba(255, 255, 255, 0.82) !important; }
+.login-form-panel { display: flex; align-items: center; justify-content: center; padding: 2rem; }
+.login-card { width: 100%; max-width: 520px; background: rgba(255, 255, 255, 0.96); border: 1px solid rgba(15, 23, 42, 0.08); border-radius: 1.75rem; padding: 2rem; }
+.login-note { border-radius: 1rem; padding: 0.9rem 1rem; background: #f8fbff; border: 1px solid #dbe6f7; color: #16355f; }
+@media (max-width: 991.98px) { .login-shell { grid-template-columns: 1fr; } .login-form-panel { min-height: 100vh; } }
 </style>

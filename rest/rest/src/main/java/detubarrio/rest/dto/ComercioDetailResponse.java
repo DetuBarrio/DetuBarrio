@@ -14,6 +14,6 @@ public record ComercioDetailResponse(
     Double puntuacionMedia,
     Long totalResenas,
     List<ProductoComercioResponse> productos,
-    List<ResenaResponse> resenas
-) {
-}
+    List<ResenaResponse> resenas,
+    List<DisponibilidadResponse> disponibilidades 
+) {}

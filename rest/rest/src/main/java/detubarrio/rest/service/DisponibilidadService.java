@@ -1,8 +1,12 @@
 package detubarrio.rest.service;
 
 import detubarrio.rest.dto.DisponibilidadDTO;
+import detubarrio.rest.model.Comercio;
 import detubarrio.rest.model.Disponibilidad;
+import detubarrio.rest.repository.ComercioRepository;
 import detubarrio.rest.repository.DisponibilidadRepository;
+import detubarrio.rest.repository.ReservaRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +20,12 @@ public class DisponibilidadService {
 
     @Autowired
     private DisponibilidadRepository repository;
+
+    @Autowired
+    private ComercioRepository comercioRepository;
+
+    @Autowired // <-- 2. INYECTA EL REPOSITORIO DE RESERVAS
+    private ReservaRepository reservaRepository;
 
     @Transactional
     public void guardarHorariosDesdeDTO(DisponibilidadDTO dto) {
@@ -38,26 +48,35 @@ public class DisponibilidadService {
 
             // 3. Si pasa la validación, guardamos
             Disponibilidad nuevaDisp = new Disponibilidad();
-            nuevaDisp.setComercioId(dto.getComercioId());
+            // BUSCA EL COMERCIO PRIMERO (Esto arregla el error rojo de la imagen)
+            Comercio comercio = comercioRepository.findById(dto.getComercioId())
+                .orElseThrow(() -> new RuntimeException("Comercio no encontrado"));
+
+            nuevaDisp.setComercio(comercio); // Usa el objeto, no solo el ID
             nuevaDisp.setFecha(fechaNueva);
             nuevaDisp.setHoraInicio(inicioNuevo);
             nuevaDisp.setHoraFin(finNuevo);
             nuevaDisp.setReservado(false);
-            
+
             repository.save(nuevaDisp);
         }
     }
 
+
+    @Transactional
     public void eliminar(Long id) {
-        // Verificamos si existe antes de borrar para evitar errores
         if (repository.existsById(id)) {
+            
+            reservaRepository.deleteByDisponibilidadId(id); 
+            
             repository.deleteById(id);
+            
         } else {
             throw new RuntimeException("No se encontró la disponibilidad con ID: " + id);
         }
-    }   
-
-    public List<Disponibilidad> obtenerPorComercio(Long comercioId) {
-        return repository.findByComercioId(comercioId);
     }
-}
+
+        public List<Disponibilidad> obtenerPorComercio(Long comercioId) {
+            return repository.findByComercioId(comercioId);
+        }
+    }

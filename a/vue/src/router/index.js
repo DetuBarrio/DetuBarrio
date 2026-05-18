@@ -1,6 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-import ComercioView from '../views/ComercioView.vue';
+import ComercioView from '../views/ComercioView.vue'
 import ComercioDetailView from '../views/ComercioDetailView.vue'
 import AboutView from '../views/AboutView.vue'
 import ContactoView from '../views/ContactoView.vue'
@@ -87,6 +87,21 @@ const router = createRouter({
       meta: {
         requiredRole: 'COMERCIO',
       },
+    },
+    {
+      path: '/dashboard/disponibilidad',
+      name: 'disponibilidad',
+      component: () => import('../views/DisponibilidadView.vue')
+    },
+    {
+      path: '/dashboard/configuracion',
+      name: 'Configuracion',
+      component: () => import('../views/ConfiguracionView.vue')
+    },
+    {
+      path: '/dashboard/comercio/reservas',
+      name: 'mis-reservas',
+      component: () => import('../views/MisReservasView.vue')
     },
     {
       path: '/admin',

@@ -8,11 +8,15 @@ import saborImage from '../assets/images/sabor.png'
 import torfelizImage from '../assets/images/torfeliz.png'
 import fontaneroImage from '../assets/images/fontanero.png'
 import buenaMesaImage from '../assets/images/buenaMesa.png'
+import SeccionReservas from './SeccionReservas.vue'
 
 const route = useRoute()
 const comercio = ref(null)
 const isLoading = ref(true)
 const errorMessage = ref('')
+
+// Configuración del servidor Backend
+const API_URL = 'http://localhost:8080'
 
 const comercioImageModules = import.meta.glob('../assets/images/*.{png,jpg,jpeg,webp,svg,gif}', {
   eager: true,
@@ -50,20 +54,31 @@ const FALLBACK_PRODUCT_IMAGES = [
   torfelizImage,
 ]
 
+/**
+ * FUNCIÓN CORREGIDA: Ahora detecta rutas de servidor (/uploads)
+ */
 function normalizeImageUrl(imageUrl) {
   if (!imageUrl) {
     return DEFAULT_IMAGE
   }
 
+  // 1. Si es una ruta del backend (/uploads/...), le concatenamos la URL del servidor
+  if (typeof imageUrl === 'string' && imageUrl.startsWith('/uploads')) {
+    return `${API_URL}${imageUrl}`
+  }
+
+  // 2. Si ya es una URL completa o un base64, la devolvemos tal cual
+  if (/^https?:\/\//i.test(imageUrl) || imageUrl.startsWith('data:')) {
+    return imageUrl
+  }
+
+  // 3. Lógica para buscar en los assets locales de Vue
   const fileName = imageUrl.split('/').pop()
   if (comercioImagesByName[fileName]) {
     return comercioImagesByName[fileName]
   }
 
-  if (/^https?:\/\//i.test(imageUrl) || imageUrl.startsWith('data:') || imageUrl.startsWith('/')) {
-    return imageUrl
-  }
-
+  // 4. Limpieza de rutas antiguas y fallback final
   const cleanedImage = imageUrl.replace(/^\.\//, '').replace(/^images\//, '')
   const cleanedName = cleanedImage.split('/').pop()
 
@@ -71,7 +86,7 @@ function normalizeImageUrl(imageUrl) {
     return comercioImagesByName[cleanedName]
   }
 
-  return `/images/${cleanedName}`
+  return imageUrl.startsWith('/') ? imageUrl : `/images/${cleanedName}`
 }
 
 function getProductoImage(producto, index = 0) {
@@ -87,8 +102,9 @@ function getProductoImage(producto, index = 0) {
     return comercioCatalog.default || FALLBACK_PRODUCT_IMAGES[index % FALLBACK_PRODUCT_IMAGES.length]
   }
 
-  if (/^https?:\/\//i.test(producto?.imagen || '')) {
-    return producto.imagen
+  // Si el producto tiene una imagen cargada desde el servidor, la normalizamos también
+  if (producto?.imagen) {
+    return normalizeImageUrl(producto.imagen)
   }
 
   return FALLBACK_PRODUCT_IMAGES[index % FALLBACK_PRODUCT_IMAGES.length]
@@ -175,6 +191,7 @@ watch(() => route.params.id, loadComercio, { immediate: true })
 <template>
   <div class="detail-page py-4 py-lg-5">
     <div class="container container-xl">
+      <!-- Estado de Carga -->
       <div v-if="isLoading" class="d-flex justify-content-center py-5">
         <div class="text-center">
           <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
@@ -182,6 +199,7 @@ watch(() => route.params.id, loadComercio, { immediate: true })
         </div>
       </div>
 
+      <!-- Mensaje de Error -->
       <div v-else-if="errorMessage" class="alert alert-danger border-0 shadow-sm" role="alert">
         {{ errorMessage }}
         <div class="mt-3">
@@ -189,19 +207,17 @@ watch(() => route.params.id, loadComercio, { immediate: true })
         </div>
       </div>
 
+      <!-- Contenido del Comercio -->
       <template v-else-if="comercio">
         <div class="mb-4">
           <RouterLink class="btn btn-outline-secondary rounded-pill mb-3" to="/comercios">
             <i class="bi bi-arrow-left me-2"></i> Volver al listado
           </RouterLink>
 
+          <!-- Hero del Comercio -->
           <div class="detail-hero card border-0 shadow-sm overflow-hidden rounded-5">
             <div class="position-relative">
-              <img
-                :src="heroImage"
-                class="detail-hero-image w-100"
-                :alt="comercio.nombreComercio"
-              />
+              <img :src="heroImage" class="detail-hero-image w-100" :alt="comercio.nombreComercio" />
               <div class="detail-hero-overlay position-absolute bottom-0 start-0 w-100 p-4 p-lg-5 text-white">
                 <div class="d-flex flex-wrap align-items-end justify-content-between gap-3">
                   <div>
@@ -209,7 +225,9 @@ watch(() => route.params.id, loadComercio, { immediate: true })
                     <h1 class="display-6 fw-bold mb-1">{{ comercio.nombreComercio }}</h1>
                     <p class="mb-0 opacity-90">{{ comercio.descripcion }}</p>
                   </div>
-                  <span class="badge rounded-pill bg-success px-3 py-2">{{ comercio.puntuacionMedia >= 4 ? 'Muy valorado' : 'Comercio local' }}</span>
+                  <span class="badge rounded-pill bg-success px-3 py-2">
+                    {{ comercio.puntuacionMedia >= 4 ? 'Muy valorado' : 'Comercio local' }}
+                  </span>
                 </div>
               </div>
             </div>
@@ -218,11 +236,13 @@ watch(() => route.params.id, loadComercio, { immediate: true })
 
         <div class="row g-4 align-items-start">
           <div class="col-12 col-lg-8">
+            <!-- Sobre Nosotros -->
             <section class="card border-0 shadow-sm rounded-4 p-4 mb-4">
               <h2 class="h4 fw-bold mb-3">Sobre nosotros</h2>
               <p class="text-muted mb-0">{{ comercio.descripcion || 'Este comercio todavía no ha añadido una descripción.' }}</p>
             </section>
 
+            <!-- Productos Estrella -->
             <section class="mb-4">
               <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
                 <h2 class="h4 fw-bold mb-0">Nuestros productos estrella</h2>
@@ -232,11 +252,7 @@ watch(() => route.params.id, loadComercio, { immediate: true })
               <div class="row g-3">
                 <div v-for="(producto, index) in productos" :key="producto.id || producto.nombreProducto" class="col-12 col-md-6">
                   <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden product-card">
-                    <img
-                      :src="getProductoImage(producto, index)"
-                      class="product-card-image"
-                      :alt="producto.nombreProducto"
-                    />
+                    <img :src="getProductoImage(producto, index)" class="product-card-image" :alt="producto.nombreProducto" />
                     <div class="card-body">
                       <h3 class="h6 fw-bold mb-1">{{ producto.nombreProducto }}</h3>
                       <p class="text-muted small mb-2">{{ producto.descripcion || 'Sin descripción' }}</p>
@@ -244,14 +260,24 @@ watch(() => route.params.id, loadComercio, { immediate: true })
                     </div>
                   </div>
                 </div>
-
                 <div v-if="!productos.length" class="col-12">
                   <div class="alert alert-light border mb-0">Este comercio aún no tiene productos publicados.</div>
                 </div>
               </div>
             </section>
 
-            <section class="card border-0 shadow-sm rounded-4 p-4">
+            <!-- 
+              CAMBIO REALIZADO AQUÍ: 
+              Insertamos la Sección de Reservas entre Productos y Opiniones 
+            -->
+            <SeccionReservas 
+              v-if="comercio"
+              :idComercio="comercio.id" 
+              :disponibilidades="comercio.disponibilidades || []" 
+            />
+
+            <!-- Opiniones de Clientes -->
+            <section class="card border-0 shadow-sm rounded-4 p-4 mt-4">
               <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
                 <div>
                   <h2 class="h4 fw-bold mb-1">Opiniones de clientes</h2>
@@ -273,7 +299,8 @@ watch(() => route.params.id, loadComercio, { immediate: true })
                   </div>
                 </div>
               </div>
-
+              
+              <!-- Distribución y Lista de Reseñas -->
               <div class="mb-4">
                 <div v-for="item in ratingDistribution" :key="item.valoracion" class="d-flex align-items-center gap-2 mb-2">
                   <span class="small text-muted rating-label">{{ item.valoracion }}</span>
@@ -296,44 +323,39 @@ watch(() => route.params.id, loadComercio, { immediate: true })
                   <p class="mb-2 text-body-secondary">{{ resena.comentario || 'Sin comentario.' }}</p>
                   <small class="text-muted">{{ formatDate(resena.fecha) }}</small>
                 </div>
-
                 <div v-if="!resenas.length" class="text-muted">Aún no hay reseñas para este comercio.</div>
               </div>
             </section>
           </div>
 
+          <!-- Sidebar Derecha -->
           <div class="col-12 col-lg-4">
             <div class="sticky-top detail-sidebar" style="top: 20px;">
+              <!-- Info del Comercio -->
               <div class="card border-0 shadow-sm rounded-4 p-4 mb-3">
                 <div class="d-flex align-items-center gap-3 mb-3">
-                  <img
-                    :src="logoImage"
-                    class="rounded-4 detail-logo"
-                    :alt="comercio.nombreComercio"
-                  />
+                  <img :src="logoImage" class="rounded-4 detail-logo" :alt="comercio.nombreComercio" />
                   <div>
                     <p class="text-muted small mb-1">{{ comercio.categoria }}</p>
                     <h2 class="h5 fw-bold mb-0">{{ comercio.nombreComercio }}</h2>
                   </div>
                 </div>
-
                 <button class="btn btn-primary w-100 rounded-3 mb-3">Contactar ahora</button>
-
                 <div class="mb-3">
                   <p class="small text-uppercase text-muted fw-semibold mb-2">Horario</p>
                   <p class="mb-1 small">{{ comercio.horario || 'Horario no disponible' }}</p>
                   <p class="mb-0 small">{{ comercio.diasApertura || 'Días de apertura no disponibles' }}</p>
                 </div>
-
                 <div>
                   <p class="small text-uppercase text-muted fw-semibold mb-2">Estado</p>
                   <div class="d-flex align-items-center gap-2">
                     <span class="badge rounded-pill bg-success">Abierto</span>
-                    <span class="small text-muted">Información orientativa desde la ficha del comercio</span>
+                    <span class="small text-muted">Información orientativa</span>
                   </div>
                 </div>
               </div>
-
+              
+              <!-- Ubicación -->
               <div class="card border-0 shadow-sm rounded-4 p-4">
                 <h3 class="h6 fw-bold mb-3">Ubicación</h3>
                 <p class="text-muted small mb-1">📍 Calle del Pan, 123, 28080</p>

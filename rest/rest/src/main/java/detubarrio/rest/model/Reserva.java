@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
 @Entity
 @Data
 @Table(name = "reserva") // El nombre exacto de tu tabla en DBeaver
@@ -29,6 +32,7 @@ public class Reserva {
     // Relación con el hueco horario de la tabla disponibilidad
     @OneToOne
     @JoinColumn(name = "id_disponibilidad")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Disponibilidad disponibilidad;
 
     @Column(name = "fecha_creacion")

@@ -4,12 +4,17 @@ import { RouterLink, useRouter } from 'vue-router'
 import callegestionCliente from '../assets/images/callegestionCliente.png'
 import { clearAuth, getAuth } from '../services/authService'
 import { fetchUsuarioDashboard } from '../services/dashboardService'
+// 1. IMPORTAMOS TU VISTA DE RESERVAS (Ajusta la ruta si está en otra carpeta)
+import ReservasUsuario from './ReservasUsuario.vue' 
 
 const router = useRouter()
 const auth = ref(getAuth())
 const loading = ref(false)
 const errorMessage = ref('')
 const dashboard = ref(null)
+
+// 2. VARIABLE PARA CONTROLAR QUÉ PESTAÑA SE MUESTRA
+const seccionActiva = ref('general') 
 
 const displayName = computed(() => dashboard.value?.nombre || auth.value?.nombre || 'Usuario')
 const email = computed(() => dashboard.value?.email || auth.value?.email || '')
@@ -71,21 +76,41 @@ onMounted(async () => {
       </div>
 
       <nav class="sidebar-nav">
-        <a class="active" href="#">
+        <button 
+          :class="{ 'active': seccionActiva === 'general' }" 
+          @click="seccionActiva = 'general'"
+          class="nav-link-btn"
+        >
           <i class="bi bi-grid me-2"></i> Panel general
-        </a>
-        <a href="#">
+        </button>
+        <button 
+          :class="{ 'active': seccionActiva === 'reservas' }" 
+          @click="seccionActiva = 'reservas'"
+          class="nav-link-btn"
+        >
           <i class="bi bi-calendar-check me-2"></i> Mis reservas
-        </a>
-        <a href="#">
+        </button>
+        <button 
+          :class="{ 'active': seccionActiva === 'pedidos' }" 
+          @click="seccionActiva = 'pedidos'"
+          class="nav-link-btn"
+        >
           <i class="bi bi-bag me-2"></i> Mis pedidos
-        </a>
-        <a href="#">
+        </button>
+        <button 
+          :class="{ 'active': seccionActiva === 'perfil' }" 
+          @click="seccionActiva = 'perfil'"
+          class="nav-link-btn"
+        >
           <i class="bi bi-person me-2"></i> Mi perfil
-        </a>
-        <a href="#">
+        </button>
+        <button 
+          :class="{ 'active': seccionActiva === 'ajustes' }" 
+          @click="seccionActiva = 'ajustes'"
+          class="nav-link-btn"
+        >
           <i class="bi bi-gear me-2"></i> Ajustes
-        </a>
+        </button>
       </nav>
 
       <div class="sidebar-actions">
@@ -122,127 +147,139 @@ onMounted(async () => {
       <template v-else>
         <div v-if="errorMessage" class="alert alert-danger border-0 shadow-sm mb-4">{{ errorMessage }}</div>
 
-        <div class="hero-panel shadow-sm mb-4">
-          <div class="hero-panel__text">
-            <h2 class="fw-bold mb-2">¿Lista para tu próxima experiencia local?</h2>
-            <p class="text-muted mb-4">
-              Encuentra y reserva servicios en los comercios de tu barrio de forma rápida y sencilla.
-            </p>
-            <RouterLink class="btn btn-primary px-4 py-2 fw-semibold" to="/comercios">
-              <i class="bi bi-plus-lg me-1"></i> Hacer una nueva reserva
-            </RouterLink>
+        <div v-if="seccionActiva === 'reservas'">
+          <ReservasUsuario />
+        </div>
+
+        <div v-else-if="seccionActiva === 'general'">
+          <div class="hero-panel shadow-sm mb-4">
+            <div class="hero-panel__text">
+              <h2 class="fw-bold mb-2">¿Lista para tu próxima experiencia local?</h2>
+              <p class="text-muted mb-4">
+                Encuentra y reserva servicios en los comercios de tu barrio de forma rápida y sencilla.
+              </p>
+              <button class="btn btn-primary px-4 py-2 fw-semibold" @click="seccionActiva = 'reservas'">
+                <i class="bi bi-calendar-plus me-1"></i> Ver mis reservas actuales
+              </button>
+            </div>
+            <div class="hero-panel__image">
+              <img :src="callegestionCliente" alt="Ilustración de barrio" />
+            </div>
           </div>
-          <div class="hero-panel__image">
-            <img :src="callegestionCliente" alt="Ilustración de barrio" />
+
+          <div class="row g-4 mb-4">
+            <div class="col-md-4">
+              <div class="metric-card shadow-sm" @click="seccionActiva = 'reservas'" style="cursor: pointer;">
+                <p class="text-muted mb-2">Reservas activas</p>
+                <div class="metric-value">3</div>
+                <small class="text-success">+1 esta semana</small>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="metric-card shadow-sm">
+                <p class="text-muted mb-2">Comercios favoritos</p>
+                <div class="metric-value">5</div>
+                <small class="text-primary">Tus lugares guardados</small>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="metric-card shadow-sm">
+                <p class="text-muted mb-2">Estado de cuenta</p>
+                <div class="metric-value">Activo</div>
+                <small class="text-muted">Sesión iniciada correctamente</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-4">
+            <div class="col-lg-8">
+              <div class="panel-card shadow-sm h-100">
+                <div class="panel-card__head">
+                  <h5 class="fw-bold mb-0">Últimas reservas</h5>
+                  <span class="text-muted small">Actividad reciente</span>
+                </div>
+                <div class="table-responsive">
+                  <table class="table align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th>Comercio</th>
+                        <th>Servicio</th>
+                        <th>Fecha</th>
+                        <th class="text-end">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="fw-semibold">Peluquería RD</td>
+                        <td class="text-muted">Corte de pelo</td>
+                        <td>25 Dic, 2025</td>
+                        <td class="text-end"><span class="status-badge status-confirmada">Confirmada</span></td>
+                      </tr>
+                      <tr>
+                        <td class="fw-semibold">Fisio Luz</td>
+                        <td class="text-muted">Masaje descontracturante</td>
+                        <td>27 Oct, 2025</td>
+                        <td class="text-end"><span class="status-badge status-cancelada">Cancelada</span></td>
+                      </tr>
+                      <tr>
+                        <td class="fw-semibold">Clínica Dental Sonrisas</td>
+                        <td class="text-muted">Limpieza bucal</td>
+                        <td>15 Feb, 2025</td>
+                        <td class="text-end"><span class="status-badge status-pendiente">Pendiente</span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-4">
+              <div class="panel-card shadow-sm h-100">
+                <div class="panel-card__head">
+                  <h5 class="fw-bold mb-0">Notificaciones</h5>
+                  <span class="text-muted small">Recientes</span>
+                </div>
+
+                <div class="notifications">
+                  <div class="notification-item">
+                    <div class="notification-icon bg-success-subtle text-success">
+                      <i class="bi bi-check-lg"></i>
+                    </div>
+                    <div>
+                      <p class="mb-1 fw-medium">Tu reserva en 'Peluquería RD' ha sido confirmada.</p>
+                      <small class="text-muted">Hace 5 minutes</small>
+                    </div>
+                  </div>
+
+                  <div class="notification-item">
+                    <div class="notification-icon bg-warning-subtle text-warning">
+                      <i class="bi bi-tag-fill"></i>
+                    </div>
+                    <div>
+                      <p class="mb-1 fw-medium">¡Nueva oferta! 15% de dto. en 'Frutería Pepe'.</p>
+                      <small class="text-muted">Hace 2 horas</small>
+                    </div>
+                  </div>
+
+                  <div class="notification-item">
+                    <div class="notification-icon bg-light text-primary">
+                      <i class="bi bi-info-circle"></i>
+                    </div>
+                    <div>
+                      <p class="mb-1 fw-medium">Completa tu perfil para obtener recomendaciones personalizadas.</p>
+                      <small class="text-muted">Hace 1 día</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="row g-4 mb-4">
-          <div class="col-md-4">
-            <div class="metric-card shadow-sm">
-              <p class="text-muted mb-2">Reservas activas</p>
-              <div class="metric-value">3</div>
-              <small class="text-success">+1 esta semana</small>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="metric-card shadow-sm">
-              <p class="text-muted mb-2">Comercios favoritos</p>
-              <div class="metric-value">5</div>
-              <small class="text-primary">Tus lugares guardados</small>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="metric-card shadow-sm">
-              <p class="text-muted mb-2">Estado de cuenta</p>
-              <div class="metric-value">Activo</div>
-              <small class="text-muted">Sesión iniciada correctamente</small>
-            </div>
-          </div>
-        </div>
-
-        <div class="row g-4">
-          <div class="col-lg-8">
-            <div class="panel-card shadow-sm h-100">
-              <div class="panel-card__head">
-                <h5 class="fw-bold mb-0">Últimas reservas</h5>
-                <span class="text-muted small">Actividad reciente</span>
-              </div>
-              <div class="table-responsive">
-                <table class="table align-middle mb-0">
-                  <thead>
-                    <tr>
-                      <th>Comercio</th>
-                      <th>Servicio</th>
-                      <th>Fecha</th>
-                      <th class="text-end">Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td class="fw-semibold">Peluquería RD</td>
-                      <td class="text-muted">Corte de pelo</td>
-                      <td>25 Dic, 2025</td>
-                      <td class="text-end"><span class="status-badge status-confirmada">Confirmada</span></td>
-                    </tr>
-                    <tr>
-                      <td class="fw-semibold">Fisio Luz</td>
-                      <td class="text-muted">Masaje descontracturante</td>
-                      <td>27 Oct, 2025</td>
-                      <td class="text-end"><span class="status-badge status-cancelada">Cancelada</span></td>
-                    </tr>
-                    <tr>
-                      <td class="fw-semibold">Clínica Dental Sonrisas</td>
-                      <td class="text-muted">Limpieza bucal</td>
-                      <td>15 Feb, 2025</td>
-                      <td class="text-end"><span class="status-badge status-pendiente">Pendiente</span></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-lg-4">
-            <div class="panel-card shadow-sm h-100">
-              <div class="panel-card__head">
-                <h5 class="fw-bold mb-0">Notificaciones</h5>
-                <span class="text-muted small">Recientes</span>
-              </div>
-
-              <div class="notifications">
-                <div class="notification-item">
-                  <div class="notification-icon bg-success-subtle text-success">
-                    <i class="bi bi-check-lg"></i>
-                  </div>
-                  <div>
-                    <p class="mb-1 fw-medium">Tu reserva en 'Peluquería RD' ha sido confirmada.</p>
-                    <small class="text-muted">Hace 5 minutos</small>
-                  </div>
-                </div>
-
-                <div class="notification-item">
-                  <div class="notification-icon bg-warning-subtle text-warning">
-                    <i class="bi bi-tag-fill"></i>
-                  </div>
-                  <div>
-                    <p class="mb-1 fw-medium">¡Nueva oferta! 15% de dto. en 'Frutería Pepe'.</p>
-                    <small class="text-muted">Hace 2 horas</small>
-                  </div>
-                </div>
-
-                <div class="notification-item">
-                  <div class="notification-icon bg-light text-primary">
-                    <i class="bi bi-info-circle"></i>
-                  </div>
-                  <div>
-                    <p class="mb-1 fw-medium">Completa tu perfil para obtener recomendaciones personalizadas.</p>
-                    <small class="text-muted">Hace 1 día</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div v-else class="p-4 bg-white rounded shadow-sm text-center">
+          <h4 class="fw-bold text-muted">Sección en desarrollo</h4>
+          <p class="text-muted mb-0">Esta vista estará disponible muy pronto.</p>
+          <button class="btn btn-primary mt-3" @click="seccionActiva = 'general'">Volver al Panel General</button>
         </div>
       </template>
     </section>
@@ -283,7 +320,7 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--db-primary);
+  background: var(--db-primary, #025197);
   color: white;
   font-weight: 700;
 }
@@ -294,17 +331,24 @@ onMounted(async () => {
   gap: 0.4rem;
 }
 
-.sidebar-nav a {
+/* 5. ESTILOS PARA LOS NUEVOS BOTONES DEL MENÚ */
+.nav-link-btn {
+  text-align: left;
+  background: none;
+  border: none;
   text-decoration: none;
   color: #495057;
   padding: 0.8rem 1rem;
   border-radius: 0.9rem;
+  width: 100%;
+  transition: all 0.2s ease;
+  font-size: 1rem;
 }
 
-.sidebar-nav a.active,
-.sidebar-nav a:hover {
+.nav-link-btn.active,
+.nav-link-btn:hover {
   background: #eaf2ff;
-  color: var(--db-primary);
+  color: var(--db-primary, #025197);
   font-weight: 600;
 }
 
@@ -330,7 +374,7 @@ onMounted(async () => {
   text-transform: uppercase;
   letter-spacing: 0.18em;
   font-size: 0.72rem;
-  color: var(--db-secondary);
+  color: var(--db-secondary, #6c757d);
   font-weight: 700;
 }
 
