@@ -29,6 +29,7 @@ public class ComercioService {
     @Autowired private ComercioProductoRepository comercioProductoRepository;
     @Autowired private ProductoRepository productoRepository;
     @Autowired private CategoriaRepository categoriaRepository;
+    @Autowired private UsuarioRepository usuarioRepository;
     
 
     @Transactional(readOnly = true)
@@ -72,16 +73,67 @@ public class ComercioService {
     }
 
     @Transactional
-    public ComercioDetailResponse actualizarConFotos(Long id, String nombre, String descripcion, String horario, String diasApertura, MultipartFile logo, MultipartFile banner) {
+    public ResenaResponse agregarResenaAComercio(Long comercioId, ResenaRequest request, String emailUsuario) {
+        // 1. Buscamos el comercio asociado
+        Comercio comercio = comercioRepository.findById(comercioId)
+                .orElseThrow(() -> new RuntimeException("Comercio no encontrado"));
+                
+        // 2. Buscamos el usuario en la BD para sacar su verdadero nombre de perfil
+        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(emailUsuario)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // 3. Construimos la entidad Resena con los datos mezclados (Request + Token Seguro)
+        Resena resena = Resena.builder()
+                .titulo(request.titulo())
+                .comentario(request.comentario())
+                .valoracion(request.valoracion())
+                .autorNombre(usuario.getNombre()) // Saca el nombre real del usuario de la BD
+                .autorEmail(usuario.getEmail())   // Saca el email verificado
+                .fecha(java.time.LocalDateTime.now())
+                .comercio(comercio)
+                .build();
+
+        Resena resenaGuardada = resenaRepository.save(resena);
+        
+        // 4. Retornamos la respuesta mapeada
+        return new ResenaResponse(
+                resenaGuardada.getId(),
+                resenaGuardada.getTitulo(),
+                resenaGuardada.getComentario(),
+                resenaGuardada.getValoracion(),
+                resenaGuardada.getAutorNombre(),
+                resenaGuardada.getAutorEmail(),
+                resenaGuardada.getFecha()
+        );
+    }
+
+    @Transactional
+    public ComercioDetailResponse actualizarConFotos(
+            Long id, 
+            String nombre, 
+            String descripcion, 
+            String horario, 
+            String diasApertura, 
+            String ubicacion, // 🛠️ NUEVO PARAMETRO: Recibido desde el controlador
+            MultipartFile logo, 
+            MultipartFile banner) {
+        
         Comercio comercio = comercioRepository.findById(id).orElseThrow(() -> new RuntimeException("No encontrado"));
+        
+        // Seteo de los datos del establecimiento en la entidad
         comercio.setNombreComercio(nombre);
         comercio.setDescripcion(descripcion);
         comercio.setHorario(horario);
         comercio.setDiasApertura(diasApertura);
+        comercio.setUbicacion(ubicacion); // 🛠️ ¡CLAVE!: Guarda la dirección física en la BD
+
         try {
             if (logo != null && !logo.isEmpty()) comercio.setLogo("/uploads/" + guardarArchivo(logo));
             if (banner != null && !banner.isEmpty()) comercio.setBanner("/uploads/" + guardarArchivo(banner));
-        } catch (IOException e) { throw new RuntimeException(e); }
+        } catch (IOException e) { 
+            throw new RuntimeException(e); 
+        }
+        
         return toDetailResponse(comercioRepository.save(comercio));
     }
 
@@ -128,6 +180,9 @@ public class ComercioService {
     }
 
     private ComercioDetailResponse toDetailResponse(Comercio c) {
+        Double media = resenaRepository.findAverageValoracionByComercioId(c.getId());
+        Long total = resenaRepository.countByComercioId(c.getId());
+
         // 1. Mapear Disponibilidades
         List<DisponibilidadResponse> disps = (c.getDisponibilidades() != null) ?
             c.getDisponibilidades().stream()
@@ -153,20 +208,23 @@ public class ComercioService {
                     r.getAutorNombre(), r.getAutorEmail(), r.getFecha()))
                 .toList() : List.of();
 
+        // CORREGIDO: Los argumentos ahora coinciden exactamente con la estructura de tu nuevo Record
         return new ComercioDetailResponse(
-            c.getId(),
-            c.getNombreComercio(),
-            c.getDescripcion(),
-            c.getHorario(),
-            c.getDiasApertura(),
-            c.getLogo(),
-            c.getBanner(),
-            c.getCategoria() != null ? c.getCategoria().getNombreCategoria() : "Sin categoría",
-            0.0, 
-            0L,  
-            productos,
-            resenas,
-            disps // <--- Ahora se llama 'disps' y coincide con el record
-        );
+                c.getId(),
+                c.getNombreComercio(),
+                c.getDescripcion(),
+                c.getHorario(),
+                c.getDiasApertura(),
+                c.getUbicacion(),
+                c.getLogo(),
+                c.getBanner(),
+                c.getCategoria() != null ? c.getCategoria().getNombreCategoria() : "Sin categoría",
+                media != null ? media : 0.0, // Usa el valor real
+                total != null ? total : 0L,  // Usa el valor real
+                productos,
+                resenas,
+                disps 
+            );
     }
+    
 }

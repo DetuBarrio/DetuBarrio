@@ -5,9 +5,12 @@ import detubarrio.rest.dto.ReservaDTO;
 import detubarrio.rest.repository.ReservaRepository;
 import detubarrio.rest.service.ReservaService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/reservas")
@@ -21,8 +24,31 @@ public class ReservaController {
     private ReservaService reservaService;
 
     @PostMapping
-    public Reserva crearReserva(@RequestBody ReservaDTO dto) {
-        return reservaService.crearReserva(dto);
+    public ResponseEntity<?> crearReserva(
+            @RequestHeader(value = "Authorization", required = false) String tokenHeader,
+            @RequestBody ReservaDTO dto) {
+        
+        // 1. 🛡️ FILTRO DE SEGURIDAD: Evita que usuarios no autenticados (sin token) creen registros
+        if (tokenHeader == null || !tokenHeader.startsWith("Bearer ")) {
+            System.out.println("⚠️ Intento de reserva bloqueado: Cabecera Authorization ausente o inválida.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Para reservar citas tienes que logearte primero."));
+        }
+
+        // 2. Validación de datos mínimos
+        if (dto.getIdUsuario() == null || dto.getIdDisponibilidad() == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "Datos de reserva incompletos (Falta Usuario o Disponibilidad)."));
+        }
+
+        try {
+            // Si pasa el filtro, procesamos la reserva con normalidad
+            Reserva nuevaReserva = reservaService.crearReserva(dto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(nuevaReserva);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "No se pudo procesar la reserva: " + e.getMessage()));
+        }
     }
 
     @GetMapping("/comercio/{id}")

@@ -2,6 +2,7 @@ package detubarrio.rest.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod; 
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -17,7 +18,6 @@ import org.springframework.security.web.SecurityFilterChain;
 
 import detubarrio.rest.repository.UsuarioRepository;
 import detubarrio.rest.security.JwtAuthenticationFilter;
-
 import lombok.RequiredArgsConstructor;
 
 @Configuration
@@ -30,11 +30,12 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
+            .csrf(csrf -> csrf.disable()) 
             .cors(Customizer.withDefaults())
             .headers(headers -> headers.frameOptions(frame -> frame.disable()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // Recursos estáticos y documentación pública
                 .requestMatchers(
                     "/",
                     "/index.html",
@@ -46,12 +47,32 @@ public class SecurityConfig {
                     "/swagger-ui/**",
                     "/api-docs/**"
                 ).permitAll()
-                .requestMatchers("/api/health", "/api/categorias", "/api/comercios/**").permitAll()
+                
+                // Endpoints de autenticación y salud
+                .requestMatchers("/api/health", "/api/categorias").permitAll()
                 .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/disponibilidades/**").permitAll()
+
+                // 🔐 REGLA CORREGIDA (SUBIDA): Protege el POST de opiniones ANTES de dar permisos generales
+                .requestMatchers(HttpMethod.POST, "/api/comercios/{comercioId}/resenas").authenticated()
+
+                // Consulta de comercios (ahora el comodín general no pisará la seguridad del POST)
+                .requestMatchers("/api/comercios/**").permitAll()
+                
+                // 🔒 PROTECCIÓN DE RESERVAS
+                .requestMatchers(HttpMethod.POST, "/api/reservas").authenticated()       
+                .requestMatchers(HttpMethod.PUT, "/api/reservas/**").authenticated()     
+                .requestMatchers(HttpMethod.GET, "/api/reservas/usuario/**").authenticated() 
+                
+                // Otras rutas protegidas de tu app
                 .requestMatchers("/api/comentarios").authenticated()
                 .requestMatchers("/api/dashboard/**", "/api/auth/me").authenticated()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .anyRequest().permitAll())
+                
+                // Cualquier otra petición se procesa según este flujo
+                .anyRequest().permitAll()
+            )
+            // Filtro JWT que lee los tokens antes de procesar la petición
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
