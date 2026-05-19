@@ -2,67 +2,91 @@
   <div class="reserva-section card shadow-sm p-4 mt-4">
     <h3 class="h5 fw-bold mb-3">📅 Reserva tu cita</h3>
     
-    <!-- DEBUG TEMPORAL: Borra esta línea cuando funcione -->
-    <!-- <pre>{{ disponibilidades }}</pre> -->
-
-    <!-- Paso 1: Selección de Fecha -->
-    <div class="mb-3">
-      <label class="form-label small text-muted">Selecciona un día:</label>
-      <input type="date" class="form-control" v-model="fechaSeleccionada" :min="today">
-    </div>
-
-    <!-- Paso 2: Selección de Horas Disponibles -->
-    <div v-if="horasFiltradas.length > 0" class="mb-4">
-      <label class="form-label small text-muted">Horas disponibles:</label>
-      <div class="d-flex flex-wrap gap-2">
-        <button 
-          v-for="hueco in horasFiltradas" 
-          :key="hueco.id" 
-          @click="seleccionarHueco(hueco)"
-          :class="['btn btn-outline-primary btn-sm', selectedId === hueco.id ? 'active' : '']"
-        >
-          {{ formatHora(hueco.horaInicio) }} - {{ formatHora(hueco.horaFin) }}
-        </button>
+    <div v-if="estaLogueado">
+      <div class="mb-3">
+        <label class="form-label small text-muted">Selecciona un día:</label>
+        <input type="date" class="form-control" v-model="fechaSeleccionada" :min="today">
       </div>
-    </div>
-    <p v-else-if="fechaSeleccionada" class="text-danger small">No hay citas para este día.</p>
 
-    <!-- Paso 3: Botón de Confirmar -->
-    <button 
-      @click="confirmarReserva" 
-      :disabled="!selectedId" 
-      class="btn btn-primary w-100 mt-2"
-    >
-      Confirmar Reserva
-    </button>
+      <div v-if="horasFiltradas.length > 0" class="mb-4">
+        <label class="form-label small text-muted">Horas disponibles:</label>
+        <div class="d-flex flex-wrap gap-2">
+          <button 
+            v-for="hueco in horasFiltradas" 
+            :key="hueco.id" 
+            @click="seleccionarHueco(hueco)"
+            :class="['btn btn-outline-primary btn-sm', selectedId === hueco.id ? 'active' : '']"
+          >
+            {{ formatHora(hueco.horaInicio) }} - {{ formatHora(hueco.horaFin) }}
+          </button>
+        </div>
+      </div>
+      <p v-else-if="fechaSeleccionada" class="text-danger small">No hay citas para este día.</p>
+
+      <button 
+        @click="confirmarReserva" 
+        :disabled="!selectedId" 
+        class="btn btn-primary w-100 mt-2"
+      >
+        Confirmar Reserva
+      </button>
+    </div>
+
+    <div v-else class="text-center py-3">
+      <div class="fs-2 mb-2">🔒</div>
+      <h4 class="h6 fw-bold text-dark mb-2">Acceso Restringido</h4>
+      <p class="text-muted small mb-3">
+        Para reservar citas en los comercios de tu barrio tienes que logearte en tu cuenta.
+      </p>
+      <a href="#/login" class="btn btn-primary btn-sm w-100 fw-bold">
+        🔐 Iniciar Sesión / Registrarse
+      </a>
+    </div>
+
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
+import { getAuth } from '../services/authService'; 
 
 const props = defineProps(['idComercio', 'disponibilidades']);
 const fechaSeleccionada = ref('');
 const selectedId = ref(null);
-// Corregido: simplificado el manejo de la fecha de hoy
 const today = new Date().toISOString().split('T')[0];
+
+// Por defecto asumimos que NO está logueado hasta validar credenciales reales
+const estaLogueado = ref(false);
+
+onMounted(() => {
+  // 🎯 Validación estricta cruzando authService y localStorage
+  const authData = getAuth();
+  const token = authData?.token || localStorage.getItem('token');
+  const usuarioLogueadoId = authData?.id || authData?.usuarioId || localStorage.getItem('usuarioId');
+  
+  // Si tiene un ID de usuario pero NO tiene token de sesión, consideramos que la sesión caducó o es falsa
+  if (usuarioLogueadoId && token) {
+    estaLogueado.value = true;
+  } else {
+    estaLogueado.value = false;
+    // Limpieza preventiva por si acaso quedaron residuos antiguos de ID en el navegador
+    localStorage.removeItem('usuarioId'); 
+  }
+});
 
 // Filtra las horas según la fecha elegida
 const horasFiltradas = computed(() => {
   if (!fechaSeleccionada.value || !props.disponibilidades) return [];
   
-  // Normalizamos la fecha seleccionada para asegurar que no hay espacios raros
   const fechaBusqueda = fechaSeleccionada.value.trim();
 
   return props.disponibilidades.filter(d => {
-    // Si en la base de datos es '2026-05-15' y el input da '2026-05-15', esto entrará
     return d.fecha === fechaBusqueda && !d.reservado;
   });
 });
 
 const seleccionarHueco = (hueco) => {
-  // CAMBIO: Usamos .id porque lo cambiamos en el Backend
   selectedId.value = hueco.id;
 };
 
@@ -72,23 +96,26 @@ const formatHora = (hora) => {
 };
 
 const confirmarReserva = async () => {
-  try {
-    // 🎯 Clave exacta que vimos en tu consola de almacenamiento local
-    const usuarioLogueadoId = localStorage.getItem('usuarioId');
+  if (!estaLogueado.value) {
+    alert('Para reservar citas tienes que logearte.');
+    return;
+  }
 
-    if (!usuarioLogueadoId) {
-      alert('Debes iniciar sesión para poder reservar una cita.');
-      return;
-    }
+  try {
+    const authData = getAuth();
+    const token = authData?.token || localStorage.getItem('token');
+    const usuarioLogueadoId = authData?.id || authData?.usuarioId || localStorage.getItem('usuarioId');
 
     const reservaData = {
       idComercio: props.idComercio,
-      idUsuario: parseInt(usuarioLogueadoId), 
+      idUsuario: parseInt(usuarioLogueadoId, 10), 
       idDisponibilidad: selectedId.value,    
       idServicio: null 
     };
     
-    await axios.post('http://localhost:8080/api/reservas', reservaData);
+    const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+    
+    await axios.post('http://localhost:8080/api/reservas', reservaData, config);
     
     alert('¡Reserva realizada con éxito!');
     location.reload(); 

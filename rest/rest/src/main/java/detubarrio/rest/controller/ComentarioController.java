@@ -1,6 +1,8 @@
 package detubarrio.rest.controller;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,17 +23,16 @@ public class ComentarioController {
 
     private final ResenaService resenaService;
 
-    @PostMapping
+    // Se añade el {comercioId} a la ruta para que @PathVariable funcione
+    @PostMapping("/{comercioId}")
     @ResponseStatus(HttpStatus.CREATED)
-    public ResenaResponse crearComentario(@Valid @RequestBody ComentarioRequest request) {
-        ResenaRequest resenaRequest = new ResenaRequest(
-            request.titulo(),
-            request.comentario(),
-            request.valoracion(),
-            request.autorNombre(),
-            request.autorEmail()
-        );
-
-        return resenaService.crearResena(request.comercioId(), resenaRequest);
+    public ResenaResponse crearComentario(
+        @PathVariable Long comercioId,
+        @Valid @RequestBody ResenaRequest request // Cambiado de ComentarioRequest a ResenaRequest
+    ) {
+        String emailUsuario = SecurityContextHolder.getContext().getAuthentication().getName();
+        
+        // Ya no necesitas hacer el 'new ResenaRequest(...)', usa 'request' directamente
+        return resenaService.crearResena(comercioId, request, emailUsuario);
     }
 }

@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { fetchComercioById } from '../services/comercioService'
+import axios from 'axios' 
 import panaderiaPan from '../assets/images/panaderia_pan.png'
 import panaderiaCruasant from '../assets/images/panaderia_cruasant.png'
 import saborImage from '../assets/images/sabor.png'
@@ -10,10 +11,31 @@ import fontaneroImage from '../assets/images/fontanero.png'
 import buenaMesaImage from '../assets/images/buenaMesa.png'
 import SeccionReservas from './SeccionReservas.vue'
 
+// 🎯 IMPORTACIÓN CORREGIDA: Traemos getAuth para usar la misma lógica que las reservas
+import { getAuth } from '../services/authService' 
+
 const route = useRoute()
 const comercio = ref(null)
 const isLoading = ref(true)
 const errorMessage = ref('')
+
+// --- VARIABLES PARA EL FORMULARIO DE RESEÑAS ---
+const enviando = ref(false)
+
+// 🎯 LÓGICA CORREGIDA: Idéntica a la que usas en SeccionReservas.vue
+const isLoggedIn = computed(() => {
+  const authData = getAuth();
+  const token = authData?.token || localStorage.getItem('token');
+  const usuarioId = authData?.id || authData?.usuarioId || localStorage.getItem('usuarioId');
+  return !!(token && usuarioId);
+})
+
+const nuevaResena = ref({
+  titulo: '',
+  comentario: '',
+  valoracion: 5
+})
+// -----------------------------------------------------------------------
 
 // Configuración del servidor Backend
 const API_URL = 'http://localhost:8080'
@@ -54,31 +76,24 @@ const FALLBACK_PRODUCT_IMAGES = [
   torfelizImage,
 ]
 
-/**
- * FUNCIÓN CORREGIDA: Ahora detecta rutas de servidor (/uploads)
- */
 function normalizeImageUrl(imageUrl) {
   if (!imageUrl) {
     return DEFAULT_IMAGE
   }
 
-  // 1. Si es una ruta del backend (/uploads/...), le concatenamos la URL del servidor
   if (typeof imageUrl === 'string' && imageUrl.startsWith('/uploads')) {
     return `${API_URL}${imageUrl}`
   }
 
-  // 2. Si ya es una URL completa o un base64, la devolvemos tal cual
   if (/^https?:\/\//i.test(imageUrl) || imageUrl.startsWith('data:')) {
     return imageUrl
   }
 
-  // 3. Lógica para buscar en los assets locales de Vue
   const fileName = imageUrl.split('/').pop()
   if (comercioImagesByName[fileName]) {
     return comercioImagesByName[fileName]
   }
 
-  // 4. Limpieza de rutas antiguas y fallback final
   const cleanedImage = imageUrl.replace(/^\.\//, '').replace(/^images\//, '')
   const cleanedName = cleanedImage.split('/').pop()
 
@@ -102,7 +117,6 @@ function getProductoImage(producto, index = 0) {
     return comercioCatalog.default || FALLBACK_PRODUCT_IMAGES[index % FALLBACK_PRODUCT_IMAGES.length]
   }
 
-  // Si el producto tiene una imagen cargada desde el servidor, la normalizamos también
   if (producto?.imagen) {
     return normalizeImageUrl(producto.imagen)
   }
@@ -185,13 +199,47 @@ async function loadComercio() {
   }
 }
 
+async function enviarResena() {
+  if (nuevaResena.value.titulo.trim() === '' || nuevaResena.value.comentario.trim() === '') return
+
+  enviando.value = true
+  try {
+    // 🎯 OBTENCIÓN DEL TOKEN CORREGIDA: Asegura obtener el token activo real
+    const authData = getAuth();
+    const token = authData?.token || localStorage.getItem('token')
+    const comercioId = comercio.value.id
+
+    await axios.post(
+      `${API_URL}/api/comercios/${comercioId}/resenas`,
+      {
+        titulo: nuevaResena.value.titulo,
+        comentario: nuevaResena.value.comentario,
+        valoracion: nuevaResena.value.valoracion
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    )
+
+    nuevaResena.value = { titulo: '', comentario: '', valoracion: 5 }
+    alert('¡Tu opinión se ha compartido con éxito!')
+    await loadComercio() 
+  } catch (error) {
+    console.error("Error al publicar la reseña:", error)
+    alert('No se pudo guardar la reseña. Revisa que tu sesión siga activa.')
+  } finally {
+    enviando.value = false
+  }
+}
+
 watch(() => route.params.id, loadComercio, { immediate: true })
 </script>
 
 <template>
   <div class="detail-page py-4 py-lg-5">
     <div class="container container-xl">
-      <!-- Estado de Carga -->
       <div v-if="isLoading" class="d-flex justify-content-center py-5">
         <div class="text-center">
           <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
@@ -199,7 +247,6 @@ watch(() => route.params.id, loadComercio, { immediate: true })
         </div>
       </div>
 
-      <!-- Mensaje de Error -->
       <div v-else-if="errorMessage" class="alert alert-danger border-0 shadow-sm" role="alert">
         {{ errorMessage }}
         <div class="mt-3">
@@ -207,14 +254,12 @@ watch(() => route.params.id, loadComercio, { immediate: true })
         </div>
       </div>
 
-      <!-- Contenido del Comercio -->
       <template v-else-if="comercio">
         <div class="mb-4">
           <RouterLink class="btn btn-outline-secondary rounded-pill mb-3" to="/comercios">
             <i class="bi bi-arrow-left me-2"></i> Volver al listado
           </RouterLink>
 
-          <!-- Hero del Comercio -->
           <div class="detail-hero card border-0 shadow-sm overflow-hidden rounded-5">
             <div class="position-relative">
               <img :src="heroImage" class="detail-hero-image w-100" :alt="comercio.nombreComercio" />
@@ -236,13 +281,11 @@ watch(() => route.params.id, loadComercio, { immediate: true })
 
         <div class="row g-4 align-items-start">
           <div class="col-12 col-lg-8">
-            <!-- Sobre Nosotros -->
             <section class="card border-0 shadow-sm rounded-4 p-4 mb-4">
               <h2 class="h4 fw-bold mb-3">Sobre nosotros</h2>
               <p class="text-muted mb-0">{{ comercio.descripcion || 'Este comercio todavía no ha añadido una descripción.' }}</p>
             </section>
 
-            <!-- Productos Estrella -->
             <section class="mb-4">
               <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
                 <h2 class="h4 fw-bold mb-0">Nuestros productos estrella</h2>
@@ -266,17 +309,12 @@ watch(() => route.params.id, loadComercio, { immediate: true })
               </div>
             </section>
 
-            <!-- 
-              CAMBIO REALIZADO AQUÍ: 
-              Insertamos la Sección de Reservas entre Productos y Opiniones 
-            -->
             <SeccionReservas 
               v-if="comercio"
               :idComercio="comercio.id" 
               :disponibilidades="comercio.disponibilidades || []" 
             />
 
-            <!-- Opiniones de Clientes -->
             <section class="card border-0 shadow-sm rounded-4 p-4 mt-4">
               <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
                 <div>
@@ -300,7 +338,6 @@ watch(() => route.params.id, loadComercio, { immediate: true })
                 </div>
               </div>
               
-              <!-- Distribución y Lista de Reseñas -->
               <div class="mb-4">
                 <div v-for="item in ratingDistribution" :key="item.valoracion" class="d-flex align-items-center gap-2 mb-2">
                   <span class="small text-muted rating-label">{{ item.valoracion }}</span>
@@ -309,6 +346,48 @@ watch(() => route.params.id, loadComercio, { immediate: true })
                   </div>
                   <span class="small text-muted rating-percentage">{{ item.percentage }}%</span>
                 </div>
+              </div>
+
+              <div v-if="isLoggedIn" class="card p-3 mb-4 border-0 bg-light rounded-4 shadow-sm">
+                <h4 class="h6 fw-bold text-dark mb-3"><i class="bi bi-pencil-square me-2 text-primary"></i>Dejar una valoración</h4>
+                <form @submit.prevent="enviarResena">
+                  
+                  <div class="mb-3">
+                    <label class="form-label small fw-semibold text-secondary d-block mb-1">Tu puntuación:</label>
+                    <div class="stars-selector text-warning fs-4">
+                      <i v-for="i in 5" :key="i"
+                         :class="i <= nuevaResena.valoracion ? 'bi bi-star-fill me-1' : 'bi bi-star me-1'"
+                         @click="nuevaResena.valoracion = i"
+                         style="cursor: pointer;"></i>
+                    </div>
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label small fw-semibold text-secondary">Título breve</label>
+                    <input v-model="nuevaResena.titulo" type="text" class="form-control form-control-sm rounded-3" 
+                           placeholder="Ej: ¡Excelente servicio!, Muy recomendado..." required>
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label small fw-semibold text-secondary">Tu comentario</label>
+                    <textarea v-model="nuevaResena.comentario" class="form-control form-control-sm rounded-3" rows="3" 
+                              placeholder="Cuéntanos tu experiencia con este comercio..." required></textarea>
+                  </div>
+
+                  <button type="submit" class="btn btn-primary btn-sm px-4 fw-bold rounded-3" :disabled="enviando">
+                    <span v-if="enviando"><span class="spinner-border spinner-border-sm me-2"></span>Enviando...</span>
+                    <span v-else><i class="bi bi-send me-1"></i> Publicar Reseña</span>
+                  </button>
+                </form>
+              </div>
+
+              <div v-else class="alert alert-light text-center border rounded-4 p-4 mb-4">
+                <i class="bi bi-lock-fill text-muted fs-3 d-block mb-2"></i>
+                <h5 class="h6 fw-bold text-dark">¿Quieres dejar una opinión?</h5>
+                <p class="text-muted small mb-3">Debes iniciar sesión en tu cuenta para poder valorar este comercio.</p>
+                <RouterLink to="/login" class="btn btn-dark btn-sm px-4 fw-bold rounded-pill">
+                  <i class="bi bi-box-arrow-in-right me-1"></i> Iniciar Sesión
+                </RouterLink>
               </div>
 
               <div class="d-grid gap-3" id="resenasList">
@@ -328,10 +407,8 @@ watch(() => route.params.id, loadComercio, { immediate: true })
             </section>
           </div>
 
-          <!-- Sidebar Derecha -->
           <div class="col-12 col-lg-4">
             <div class="sticky-top detail-sidebar" style="top: 20px;">
-              <!-- Info del Comercio -->
               <div class="card border-0 shadow-sm rounded-4 p-4 mb-3">
                 <div class="d-flex align-items-center gap-3 mb-3">
                   <img :src="logoImage" class="rounded-4 detail-logo" :alt="comercio.nombreComercio" />
@@ -355,12 +432,19 @@ watch(() => route.params.id, loadComercio, { immediate: true })
                 </div>
               </div>
               
-              <!-- Ubicación -->
-              <div class="card border-0 shadow-sm rounded-4 p-4">
-                <h3 class="h6 fw-bold mb-3">Ubicación</h3>
-                <p class="text-muted small mb-1">📍 Calle del Pan, 123, 28080</p>
-                <p class="text-muted small mb-3">Madrid, España</p>
-                <img :src="logoImage" class="w-100 rounded-4" :alt="comercio.nombreComercio" />
+              <div class="card shadow-sm p-3 mt-3" style="border-radius: 12px; background-color: #ffffff;">
+                <h4 class="h6 fw-bold text-dark mb-3">📍 Ubicación</h4>
+                <p class="text-muted small mb-2" style="line-height: 1.4;">
+                  <strong>Dirección/Indicaciones:</strong><br>
+                  {{ comercio.ubicacion || 'Dirección no especificada por el comercio.' }}
+                </p>
+                <div v-if="comercio.ubicacion" class="mt-2">
+                  <a :href="'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(comercio.ubicacion)" 
+                    target="_blank" 
+                    class="btn btn-outline-primary btn-sm w-100 fw-bold d-flex align-items-center justify-content-center gap-1">
+                    🌐 Ver en Google Maps
+                  </a>
+                </div>
               </div>
             </div>
           </div>
@@ -420,11 +504,17 @@ watch(() => route.params.id, loadComercio, { immediate: true })
   z-index: 10;
 }
 
-/* Forzar color blanco en el texto del overlay hero del comercio */
 .detail-hero-overlay,
 .detail-hero-overlay h1,
 .detail-hero-overlay p,
 .detail-hero-overlay .text-uppercase {
   color: #ffffff !important;
+}
+
+.stars-selector i {
+  transition: transform 0.1s ease;
+}
+.stars-selector i:hover {
+  transform: scale(1.2);
 }
 </style>

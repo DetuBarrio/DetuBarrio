@@ -54,6 +54,9 @@ public class Comercio {
     @Column(name = "banner", length = 255)
     private String banner;
 
+    @Column(name = "ubicacion", length = 255)
+    private String ubicacion;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "estado", nullable = false, length = 20)
     @Builder.Default

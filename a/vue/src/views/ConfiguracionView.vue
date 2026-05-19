@@ -1,6 +1,6 @@
 <template>
   <div style="background-color: #f8fafc; min-height: 100vh; padding: 2rem 1rem; font-family: sans-serif;">
-    <div style="max-w: 850px; margin: 0 auto;">
+    <div style="max-width: 850px; margin: 0 auto;">
       
       <div style="background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; overflow: hidden;">
         
@@ -58,6 +58,15 @@
             </div>
 
             <div>
+              <label style="display: block; font-size: 0.875rem; font-weight: 700; color: #334155; margin-bottom: 0.5rem;">📍 Ubicación / Dirección Física</label>
+              <input v-model="comercio.ubicacion" type="text" placeholder="Ej: Calle del Pan, 123, 28080 Madrid, España"
+                     style="width: 100%; box-sizing: border-box; padding: 0.75rem 1rem; border-radius: 10px; background-color: #f8fafc; border: 1px solid #cbd5e1; font-size: 0.9rem; color: #0f172a; outline: none; transition: all 0.2s;">
+              <span style="font-size: 0.75rem; color: #64748b; display: block; margin-top: 0.4rem;">
+                Escribe la dirección completa. Esta cadena se usará para enlazar automáticamente el perfil con Google Maps.
+              </span>
+            </div>
+
+            <div>
               <label style="display: block; font-size: 0.875rem; font-weight: 700; color: #334155; margin-bottom: 0.5rem;">Descripción</label>
               <textarea v-model="comercio.descripcion" rows="4" placeholder="Cuéntale a tus vecinos qué haces especial..."
                         style="width: 100%; box-sizing: border-box; padding: 0.75rem 1rem; border-radius: 10px; background-color: #f8fafc; border: 1px solid #cbd5e1; font-size: 0.9rem; color: #0f172a; outline: none; resize: none; font-family: sans-serif;"></textarea>
@@ -79,7 +88,7 @@
 
           <div style="padding: 1.5rem 2rem; background-color: #f1f5f9; display: flex; justify-content: flex-end; border-top: 1px solid #e2e8f0;">
             <button type="submit" :disabled="loading" 
-                    style="width: 100%; max-width: 220px; background-color: #0f172a; color: #ffffff; border: none; padding: 0.85rem 1.5rem; border-radius: 10px; font-weight: 700; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; items-center: center; justify-content: center; gap: 0.5rem; transition: background-color 0.2s;">
+                    style="width: 100%; max-width: 220px; background-color: #0f172a; color: #ffffff; border: none; padding: 0.85rem 1.5rem; border-radius: 10px; font-weight: 700; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: background-color 0.2s;">
               <span v-if="loading">⏳</span>
               {{ loading ? 'Guardando...' : 'Actualizar Perfil' }}
             </button>
@@ -98,6 +107,7 @@ import axios from 'axios';
 const comercio = ref({
   id: null,
   nombreComercio: '',
+  ubicacion: '',
   descripcion: '',
   horario: '',
   diasApertura: '',
@@ -150,6 +160,7 @@ async function guardarDatosGenerales() {
     
     // Mapeo estricto con los @RequestParam de tu ComercioController
     formData.append('nombre', comercio.value.nombreComercio || '');
+    formData.append('ubicacion', comercio.value.ubicacion || ''); // 🛠️ ENVÍO AL BACKEND: Añadido al payload multipart
     formData.append('descripcion', comercio.value.descripcion || '');
     formData.append('horario', comercio.value.horario || '');
     formData.append('diasApertura', comercio.value.diasApertura || '');
@@ -163,18 +174,18 @@ async function guardarDatosGenerales() {
       formData.append('banner', bannerFile.value);
     }
 
-    // URL corregida añadiendo '/fotos' al final tal como dicta tu @PutMapping
+    // URL para actualizar datos adjuntando archivos
     const response = await axios.put(`http://localhost:8080/api/comercios/${comercio.value.id}/fotos`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
 
-    // Actualizamos el estado del comercio con la respuesta detallada del servidor
+    // Actualizamos el estado local con la respuesta del servidor
     comercio.value = response.data;
     alert("¡Perfil actualizado con éxito!");
   } catch (error) {
     console.error("Error al guardar:", error);
     const mensajeError = error.response?.data?.message || "Error interno del servidor (500).";
-    alert(`Error al actualizar: ${mensajeError}\nRevisa la consola del servidor backend si el error persiste.`);
+    alert(`Error al actualizar: ${mensajeError}\nRevisa que en el método @PutMapping del controlador de Spring Boot se esté mapeando el String 'ubicacion'.`);
   } finally {
     loading.value = false;
   }

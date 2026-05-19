@@ -8,6 +8,7 @@ public record ComercioDetailResponse(
     String descripcion,
     String horario,
     String diasApertura,
+    String ubicacion,
     String logo,
     String banner,
     String categoria,

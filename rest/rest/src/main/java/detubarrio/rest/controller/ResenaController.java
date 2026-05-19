@@ -29,6 +29,9 @@ public class ResenaController {
         return resenaService.listarResenasPorComercio(comercioId);
     }
 
+    // --- SE COMENTA ESTE MÉTODO PARA EVITAR EL DUPLICADO (AMBIGUOUS MAPPING) ---
+    // --- YA QUE ComercioController#agregarResena SE ENCARGA DE ESTA RUTA ---
+    /*
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ResenaResponse crearResena(
@@ -37,4 +40,5 @@ public class ResenaController {
     ) {
         return resenaService.crearResena(comercioId, request);
     }
+    */
 }
