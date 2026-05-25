@@ -114,7 +114,7 @@ public class ComercioService {
             String descripcion, 
             String horario, 
             String diasApertura, 
-            String ubicacion, // 🛠️ NUEVO PARAMETRO: Recibido desde el controlador
+            String ubicacion, 
             MultipartFile logo, 
             MultipartFile banner) {
         
@@ -125,7 +125,7 @@ public class ComercioService {
         comercio.setDescripcion(descripcion);
         comercio.setHorario(horario);
         comercio.setDiasApertura(diasApertura);
-        comercio.setUbicacion(ubicacion); // 🛠️ ¡CLAVE!: Guarda la dirección física en la BD
+        comercio.setUbicacion(ubicacion); 
 
         try {
             if (logo != null && !logo.isEmpty()) comercio.setLogo("/uploads/" + guardarArchivo(logo));
@@ -176,20 +176,31 @@ public class ComercioService {
     }
 
     private ComercioSummaryResponse toSummaryResponse(Comercio c) {
-        return new ComercioSummaryResponse(c.getId(), c.getNombreComercio(), c.getDescripcion(), c.getHorario(), c.getDiasApertura(), c.getLogo(), c.getCategoria() != null ? c.getCategoria().getNombreCategoria() : "Sin categoría", 0.0, 0L);
+        Double media = resenaRepository.findAverageValoracionByComercioId(c.getId());
+        Long total = resenaRepository.countByComercioId(c.getId());
+
+        return new ComercioSummaryResponse(
+            c.getId(),
+            c.getNombreComercio(),
+            c.getDescripcion(),
+            c.getHorario(),
+            c.getDiasApertura(),
+            c.getLogo(),
+            c.getCategoria() != null ? c.getCategoria().getNombreCategoria() : "Sin categoría",
+            media != null ? media : 0.0,
+            total != null ? total : 0L
+        );
     }
 
     private ComercioDetailResponse toDetailResponse(Comercio c) {
         Double media = resenaRepository.findAverageValoracionByComercioId(c.getId());
         Long total = resenaRepository.countByComercioId(c.getId());
 
-        // 1. Mapear Disponibilidades
         List<DisponibilidadResponse> disps = (c.getDisponibilidades() != null) ?
             c.getDisponibilidades().stream()
                 .map(d -> new DisponibilidadResponse(d.getId(), d.getFecha(), d.getHoraInicio(), d.getHoraFin(), d.isReservado()))
                 .toList() : List.of();
         
-        // 2. Mapear Productos
         List<ProductoComercioResponse> productos = (c.getComercioProductos() != null) ?
             c.getComercioProductos().stream()
                 .map(cp -> new ProductoComercioResponse(
@@ -200,7 +211,6 @@ public class ComercioService {
                     cp.getProducto().getImagen()))
                 .toList() : List.of();
 
-        // 3. Mapear Reseñas
         List<ResenaResponse> resenas = (c.getResenas() != null) ?
             c.getResenas().stream()
                 .map(r -> new ResenaResponse(
@@ -208,7 +218,6 @@ public class ComercioService {
                     r.getAutorNombre(), r.getAutorEmail(), r.getFecha()))
                 .toList() : List.of();
 
-        // CORREGIDO: Los argumentos ahora coinciden exactamente con la estructura de tu nuevo Record
         return new ComercioDetailResponse(
                 c.getId(),
                 c.getNombreComercio(),
@@ -219,12 +228,11 @@ public class ComercioService {
                 c.getLogo(),
                 c.getBanner(),
                 c.getCategoria() != null ? c.getCategoria().getNombreCategoria() : "Sin categoría",
-                media != null ? media : 0.0, // Usa el valor real
-                total != null ? total : 0L,  // Usa el valor real
+                media != null ? media : 0.0, 
+                total != null ? total : 0L,  
                 productos,
                 resenas,
                 disps 
             );
     }
-    
 }
