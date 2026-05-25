@@ -1,19 +1,6 @@
 package detubarrio.rest.model;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -89,8 +76,6 @@ public class Comercio {
     @OneToMany(mappedBy = "comercio", fetch = FetchType.LAZY)
     private List<Resena> resenas;
 
-    // --- NUEVA RELACIÓN AÑADIDA ---
-    // mappedBy indica que el dueño de la relación es el campo "comercio" en la clase Disponibilidad
     @OneToMany(mappedBy = "comercio", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Disponibilidad> disponibilidades;
 
