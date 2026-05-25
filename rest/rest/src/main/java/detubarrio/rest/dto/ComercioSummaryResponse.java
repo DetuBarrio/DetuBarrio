@@ -8,7 +8,6 @@ public record ComercioSummaryResponse(
     String diasApertura,
     String logo,
     String categoria,
-    Double puntuacionMedia,
-    Long totalResenas
-) {
-}
+    Double media,
+    Long total
+) {}
