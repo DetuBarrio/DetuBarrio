@@ -27,7 +27,7 @@ const errorMessage = ref('')
 const registerErrorMessage = ref('')
 const successMessage = ref('')
 
-const demoCredentials = computed(() => 'admin@detubarrio.local / admin123')
+
 
 function syncTabFromRoute() {
   activeTab.value = route.query.tab === 'register' ? 'register' : 'login'
@@ -211,9 +211,6 @@ onMounted(() => {
               {{ loading ? 'Entrando...' : 'Iniciar sesión' }}
             </button>
           </form>
-          <div class="login-note mt-4">
-            <strong>Usuario demo admin:</strong> {{ demoCredentials }}
-          </div>
         </div>
 
         <div v-else>

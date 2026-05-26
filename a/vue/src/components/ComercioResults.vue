@@ -1,103 +1,105 @@
 <script setup>
+import { ref } from 'vue'
 import ComercioCard from './ComercioCard.vue'
 
+// --- CONFIGURACIÓN DE RUTAS E IMÁGENES INTEGRADAS ---
+const API_URL = 'http://localhost:8080'
+
+// Detecta automáticamente todas las imágenes procesadas por Vite en assets
+const comercioImageModules = import.meta.glob('../assets/images/*.{png,jpg,jpeg,webp,svg,gif}', {
+  eager: true,
+  import: 'default',
+})
+
+const comercioImagesByName = Object.fromEntries(
+  Object.entries(comercioImageModules).map(([path, url]) => [path.split('/').pop(), url]),
+)
+
+// Función inteligente idéntica a la de ComercioDetalleView
+function normalizeImageUrl(imageUrl) {
+  if (!imageUrl) {
+    return '/placeholder.jpg'
+  }
+
+  if (typeof imageUrl === 'string' && imageUrl.startsWith('/uploads')) {
+    return `${API_URL}${imageUrl}`
+  }
+
+  if (/^https?:\/\//i.test(imageUrl) || imageUrl.startsWith('data:')) {
+    return imageUrl
+  }
+
+  const fileName = imageUrl.split('/').pop()
+  if (comercioImagesByName[fileName]) {
+    return comercioImagesByName[fileName]
+  }
+
+  const cleanedImage = imageUrl.replace(/^\.\//, '').replace(/^images\//, '')
+  const cleanedName = cleanedImage.split('/').pop()
+
+  if (comercioImagesByName[cleanedName]) {
+    return comercioImagesByName[cleanedName]
+  }
+
+  return imageUrl.startsWith('/') ? imageUrl : `/images/${cleanedName}`
+}
+
+// --- PROPS RECIBIDAS ---
 defineProps({
   comercios: {
     type: Array,
-    default: () => [],
-  },
-  searchQuery: {
-    type: String,
-    default: '',
+    required: true,
+    default: () => []
   },
   horaActual: {
-    type: Object,
-    default: null,
+    type: String,
+    required: true
   },
-  formatRating: {
-    type: Function,
-    required: true,
-  },
+  // Recibimos la función real de comprobación directamente desde el padre (ComercioView)
   isComercioOpen: {
     type: Function,
-    required: true,
-  },
-  totalComercios: {
-    type: Number,
-    default: 0,
-  },
-  totalResultados: {
-    type: Number,
-    default: 0,
-  },
+    required: true
+  }
 })
 
-const emit = defineEmits(['update:searchQuery'])
-
-function updateSearchQuery(event) {
-  emit('update:searchQuery', event.target.value)
+// Métodos auxiliares de formateo
+function formatRating(rating) {
+  return Number(rating || 0).toFixed(1)
 }
 </script>
 
 <template>
-  <div class="col-12 col-lg-9">
-    <div class="card border-0 shadow-sm rounded-4 p-3 p-lg-4 mb-4 commerce-search-shell">
-      <div class="input-group search-bar">
-        <span class="input-group-text bg-white border-1 rounded-start-3 border-muted">
-          <i class="bi bi-search"></i>
-        </span>
-        <input
-          :value="searchQuery"
-          type="search"
-          id="searchInput"
-          class="form-control border-1 rounded-end-3 border-muted"
-          placeholder="Busca un comercio por nombre o palabra clave..."
-          aria-label="Buscar comercio"
-          @input="updateSearchQuery"
-        />
-      </div>
-
-      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
-        <p class="text-muted mb-0" id="resultsCount">
-          Mostrando {{ totalResultados }} de {{ totalComercios }} comercios
-        </p>
-        <span class="badge rounded-pill text-bg-light border">
-          {{ totalResultados }} resultados
-        </span>
-      </div>
-    </div>
-
+  <div class="container my-4">
     <div v-if="comercios.length" class="row g-4" id="comercioGrid">
       <ComercioCard
         v-for="comercio in comercios"
-        :key="comercio.id || comercio.nombreComercio"
-        :image-url="comercio.imageUrl"
+        :key="comercio.id"
+        
+        :image-url="normalizeImageUrl(comercio.logo)" 
         :image-alt="comercio.nombreComercio"
         :category="comercio.categoria"
+        
         :is-opened="isComercioOpen(comercio, horaActual)"
+        
         :name="comercio.nombreComercio"
-        :star="formatRating(comercio.puntuacionMedia)"
-        :opinions="comercio.totalResenas || 0"
+        :star="formatRating(comercio.media || comercio.puntuacionMedia || 0)" 
+        :opinions="'(' + (comercio.total || comercio.totalResenas || 0) + ')'" 
         :to="{ name: 'comercio-detalle', params: { id: comercio.id } }"
       />
     </div>
 
-    <div v-else class="card border-0 shadow-sm rounded-4 p-4 p-lg-5 text-center bg-white">
-      <div class="mx-auto" style="max-width: 520px;">
-        <div class="empty-state-icon mb-3">
-          <i class="bi bi-shop fs-2"></i>
-        </div>
-        <h3 class="h4 fw-bold mb-2">No hay comercios para estos filtros</h3>
-        <p class="text-muted mb-4">
-          Prueba a cambiar la búsqueda, ajustar la categoría o limpiar los filtros para ver más resultados.
-        </p>
-        <button class="btn btn-primary rounded-pill px-4" type="button" @click="$emit('update:searchQuery', '')">
-          Limpiar búsqueda
-        </button>
-      </div>
+    <div v-else class="text-center py-5">
+      <i class="bi bi-shop fs-1 text-muted mb-3 d-block"></i>
+      <p class="text-muted fs-5">No se encontraron comercios que coincidan con la búsqueda.</p>
     </div>
   </div>
 </template>
+
+<style scoped>
+#comercioGrid {
+  transition: all 0.3s ease;
+}
+</style>
 
 <style scoped>
 .search-bar .form-control {

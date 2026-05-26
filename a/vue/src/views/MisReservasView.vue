@@ -1,8 +1,11 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 
 const listaReservas = ref([]);
+
+// Estado del filtro seleccionado ('TODAS', 'CONFIRMADA', 'CANCELADA', 'FINALIZADA')
+const filtroActual = ref('TODAS');
 
 onMounted(async () => {
   try {
@@ -15,6 +18,18 @@ onMounted(async () => {
   } catch (error) {
     console.error("Error al cargar las reservas en la agenda:", error);
   }
+});
+
+// --- CONTADORES DINÁMICOS BASADOS EN EL ESTADO DINÁMICO ---
+const totalReservas = computed(() => listaReservas.value.length);
+const totalConfirmadas = computed(() => listaReservas.value.filter(r => estadoDinamico(r) === 'CONFIRMADA').length);
+const totalCanceladas = computed(() => listaReservas.value.filter(r => estadoDinamico(r) === 'CANCELADA').length);
+const totalFinalizadas = computed(() => listaReservas.value.filter(r => estadoDinamico(r) === 'FINALIZADA').length);
+
+// Lista que se renderiza dinámicamente aplicando el filtro seleccionado
+const reservasFiltradas = computed(() => {
+  if (filtroActual.value === 'TODAS') return listaReservas.value;
+  return listaReservas.value.filter(reserva => estadoDinamico(reserva) === filtroActual.value);
 });
 
 // --- DETECTORES INTELIGENTES PARA PASAR DE ID A DATOS REALES ---
@@ -37,14 +52,12 @@ function extraerHoraFin(reserva) {
   return reserva.horaFin || '';
 }
 
-// Busca el nombre del cliente (en objeto anidado o propiedad plana)
 function extraerUsuarioNombre(reserva) {
   if (reserva.idUsuario && typeof reserva.idUsuario === 'object') return reserva.idUsuario.nombre;
   if (reserva.usuario && typeof reserva.usuario === 'object') return reserva.usuario.nombre;
   return reserva.nombreUsuario || reserva.usuarioNombre || reserva.clienteNombre || null;
 }
 
-// Busca el correo del cliente para la nueva columna
 function extraerUsuarioEmail(reserva) {
   if (reserva.idUsuario && typeof reserva.idUsuario === 'object') return reserva.idUsuario.email || reserva.idUsuario.correo;
   if (reserva.usuario && typeof reserva.usuario === 'object') return reserva.usuario.email || reserva.usuario.correo;
@@ -100,11 +113,12 @@ function estadoDinamico(reserva) {
   return estadoOriginal;
 }
 
-function claseEstado(estado) {
-  if (estado === 'FINALIZADA') return 'badge bg-secondary';
-  if (estado === 'CONFIRMADA') return 'badge bg-success';
-  if (estado === 'CANCELADA') return 'badge bg-danger';
-  return 'badge bg-primary';
+// Colores de badges estilizados y más llamativos
+function claseEstadoPremium(estado) {
+  if (estado === 'FINALIZADA') return 'bg-primary-light text-primary border-primary-subtle';
+  if (estado === 'CONFIRMADA') return 'bg-success-light text-success border-success-subtle';
+  if (estado === 'CANCELADA') return 'bg-danger-light text-danger border-danger-subtle';
+  return 'bg-secondary-light text-secondary border-secondary-subtle';
 }
 
 async function borrarReserva(reserva) {
@@ -127,78 +141,247 @@ async function borrarReserva(reserva) {
 </script>
 
 <template>
-  <div class="agenda-container mt-4">
-    <div class="table-responsive shadow-sm rounded">
-      <table class="table table-hover align-middle bg-white mb-0">
-        <thead class="table-dark">
-          <tr>
-            <th class="py-3 px-4">Fecha y Hora</th>
-            <th class="py-3 px-4">Cliente</th>
-            <th class="py-3 px-4">Correo Electrónico</th>
-            <th class="py-3 px-4">Estado</th>
-            <th class="py-3 px-4">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="listaReservas.length === 0">
-            <td colspan="5" class="text-center py-5 text-muted">
-              Aún no tienes citas reservadas.
-            </td>
-          </tr>
+  <div class="agenda-container mt-2">
+    <header class="view-header mb-4">
+      <div>
+        <p class="eyebrow mb-1">Gestión operativa</p>
+        <h1 class="h3 fw-extrabold text-dark mb-1">Historial de Reservas</h1>
+        <p class="text-muted small mb-0">Filtra, controla y haz seguimiento de las reservas registradas en tu establecimiento.</p>
+      </div>
+    </header>
 
-          <tr v-for="reserva in listaReservas" :key="reserva.id || reserva.idReserva">
-            
-            <td class="px-4">
-              <div class="fw-bold text-primary mb-1">{{ formatearFecha(reserva) }}</div>
-              <div class="text-muted small fw-medium" v-if="extraerHoraInicio(reserva)">
-                <span class="bg-light px-2 py-1 rounded border">
-                  {{ formatHora(extraerHoraInicio(reserva)) }} 
-                  <span v-if="extraerHoraFin(reserva)"> - {{ formatHora(extraerHoraFin(reserva)) }}</span>
+    <div class="filter-wrapper p-2 bg-white rounded-4 shadow-sm mb-4 d-flex gap-2 flex-wrap">
+      <button 
+        class="btn filter-btn" 
+        :class="{ active: filtroActual === 'TODAS' }"
+        @click="filtroActual = 'TODAS'"
+      >
+        Todas <span class="badge-count">{{ totalReservas }}</span>
+      </button>
+      
+      <button 
+        class="btn filter-btn btn-filter-success" 
+        :class="{ active: filtroActual === 'CONFIRMADA' }"
+        @click="filtroActual = 'CONFIRMADA'"
+      >
+        <i class="bi bi-calendar-check me-1.5"></i> Confirmadas 
+        <span class="badge-count">{{ totalConfirmadas }}</span>
+      </button>
+      
+      <button 
+        class="btn filter-btn btn-filter-danger" 
+        :class="{ active: filtroActual === 'CANCELADA' }"
+        @click="filtroActual = 'CANCELADA'"
+      >
+        <i class="bi bi-calendar-x me-1.5"></i> Canceladas 
+        <span class="badge-count">{{ totalCanceladas }}</span>
+      </button>
+      
+      <button 
+        class="btn filter-btn btn-filter-primary" 
+        :class="{ active: filtroActual === 'FINALIZADA' }"
+        @click="filtroActual = 'FINALIZADA'"
+      >
+        <i class="bi bi-bookmark-star me-1.5"></i> Finalizadas 
+        <span class="badge-count">{{ totalFinalizadas }}</span>
+      </button>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+      <div class="table-responsive">
+        <table class="table custom-table mb-0 align-middle">
+          <thead>
+            <tr>
+              <th scope="col" class="ps-4 py-3.5 fs-6_5 text-start">Fecha y Hora</th>
+              <th scope="col" class="py-3.5 fs-6_5 text-center">Cliente</th>
+              <th scope="col" class="py-3.5 fs-6_5 text-center">Correo Electrónico</th>
+              <th scope="col" class="py-3.5 fs-6_5 text-center">Estado</th>
+              <th scope="col" class="pe-4 py-3.5 fs-6_5 text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="reservasFiltradas.length === 0">
+              <td colspan="5" class="text-center py-5 text-muted">
+                <i class="bi bi-calendar-minus display-5 d-block mb-3 text-placeholder"></i>
+                <p class="mb-1 fw-bold fs-5 text-dark">No se encontraron reservas</p>
+                <p class="small mb-0">No hay citas registradas que coincidan con el estado seleccionado.</p>
+              </td>
+            </tr>
+
+            <tr v-for="reserva in reservasFiltradas" :key="reserva.id || reserva.idReserva" class="table-row-hover">
+              
+              <td class="ps-4 py-4">
+                <div class="fw-bold text-dark fs-5 mb-1.5">{{ formatearFecha(reserva) }}</div>
+                <div class="text-muted fw-semibold" v-if="extraerHoraInicio(reserva)">
+                  <span class="badge-time bg-light text-dark px-3 py-1.5 rounded-3 border d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-clock-fill text-primary"></i>
+                    {{ formatHora(extraerHoraInicio(reserva)) }} 
+                    <span v-if="extraerHoraFin(reserva)"> - {{ formatHora(extraerHoraFin(reserva)) }}</span>
+                  </span>
+                </div>
+              </td>
+
+              <td class="text-center py-4 fs-5 fw-bold text-dark">
+                {{ extraerUsuarioNombre(reserva) || ('ID: ' + extraerUsuarioId(reserva)) }}
+              </td>
+
+              <td class="text-center py-4">
+                <span v-if="extraerUsuarioEmail(reserva)" class="text-secondary fs-5_5 font-monospace bg-light px-2.5 py-1 rounded">
+                  {{ extraerUsuarioEmail(reserva) }}
                 </span>
-              </div>
-            </td>
+                <span v-else class="text-warning fs-6 fw-bold italic">No disponible</span>
+              </td>
 
-            <td class="px-4">
-              <div class="fw-bold text-dark">
-                {{ extraerUsuarioNombre(reserva) || ('Usuario ID: ' + extraerUsuarioId(reserva)) }}
-              </div>
-            </td>
+              <td class="text-center py-4">
+                <span class="badge badge-premium rounded-pill px-4 py-2 fw-extrabold text-uppercase tracking-wider shadow-xs border" 
+                      :class="claseEstadoPremium(estadoDinamico(reserva))">
+                  {{ estadoDinamico(reserva) }}
+                </span>
+              </td>
 
-            <td class="px-4">
-              <span v-if="extraerUsuarioEmail(reserva)" class="text-muted text-break">
-                {{ extraerUsuarioEmail(reserva) }}
-              </span>
-              <span v-else class="text-warning small italic">No disponible</span>
-            </td>
+              <td class="text-center pe-4 py-4">
+                <button class="btn btn-action-delete-large rounded-3 px-3.5 py-2 fw-bold transition-all" @click="borrarReserva(reserva)">
+                  <i class="bi bi-trash3-fill me-1.5"></i> Borrar
+                </button>
+              </td>
 
-            <td class="px-4">
-              <span class="px-3 py-2 rounded-pill fw-bold text-uppercase" style="font-size: 0.75rem;" :class="claseEstado(estadoDinamico(reserva))">
-                {{ estadoDinamico(reserva) }}
-              </span>
-            </td>
-
-            <td class="px-4">
-              <button class="btn btn-outline-danger btn-sm fw-bold px-3" @click="borrarReserva(reserva)">
-                Borrar
-              </button>
-            </td>
-
-          </tr>
-        </tbody>
-      </table>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
 .agenda-container {
-  max-width: 1300px;
-  margin: 0 auto;
+  animation: fadeIn 0.22s ease-out;
 }
-.table-dark th {
-  background-color: #11284b;
-  border-bottom: 0;
+
+.fw-extrabold { font-weight: 800; }
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.75rem;
+  color: #3a86ff;
+  font-weight: 700;
+}
+
+/* Envoltura de Filtros */
+.filter-wrapper {
+  border: 1px solid #e2e8f0;
+}
+
+/* Botones de control de filtro */
+.filter-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #64748b;
   font-weight: 600;
-  letter-spacing: 0.5px;
+  padding: 0.55rem 1.25rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+.filter-btn:hover {
+  background-color: #f1f5f9;
+  color: #1e293b;
+}
+
+.badge-count {
+  background-color: #e2e8f0;
+  color: #475569;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+}
+
+/* Variaciones Activas del Selector de Filtros */
+.filter-btn.active {
+  background-color: #0f172a;
+  color: #ffffff;
+}
+.filter-btn.active .badge-count {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+.btn-filter-success.active { background-color: #10b981; }
+.btn-filter-danger.active { background-color: #ef4444; }
+.btn-filter-primary.active { background-color: #3a86ff; }
+
+/* Estructuración de Tabla Centrada y Corpulenta */
+.custom-table thead th {
+  background-color: #f8fafc;
+  color: #475569;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.fs-6_5 {
+  font-size: 0.85rem;
+}
+
+.table-row-hover {
+  transition: background-color 0.15s ease;
+}
+.table-row-hover:hover {
+  background-color: #f8fafc;
+}
+
+/* Tipografías de tamaño intermedio aumentado */
+.fs-5 {
+  font-size: 1.05rem !important;
+}
+.fs-5_5 {
+  font-size: 0.95rem;
+}
+
+/* Badge de Horas interno */
+.badge-time {
+  font-size: 0.88rem;
+}
+
+/* Píldora de estado Premium de mayor formato */
+.badge-premium {
+  font-size: 0.825rem;
+  display: inline-block;
+}
+
+/* Botón Borrar Grande y Estilizado */
+.btn-action-delete-large {
+  background-color: #ffffff;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  font-size: 0.9rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+.btn-action-delete-large:hover {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border-color: #ef4444;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(220, 38, 38, 0.08);
+}
+
+/* Colores de Fondos Claros para Badges con bordes suaves */
+.bg-primary-light { background-color: rgba(58, 134, 255, 0.1); }
+.bg-success-light { background-color: rgba(16, 185, 129, 0.1); }
+.bg-danger-light { background-color: rgba(239, 68, 68, 0.1); }
+.bg-secondary-light { background-color: rgba(100, 116, 139, 0.1); }
+
+.tracking-wider { letter-spacing: 0.06em; }
+.text-placeholder { color: #cbd5e1; }
+.shadow-xs { box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+.transition-all { transition: all 0.2s ease; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

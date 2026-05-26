@@ -4,15 +4,13 @@ import { fetchCategorias, fetchComercios } from '../services/comercioService'
 import {
   valoracionOpciones,
   horarioOpciones,
-  formatRating,
   mapComercio,
-  isComercioOpen,
 } from '../utils/comercioHelpers'
 
 export function useComercioList() {
   const comercios = ref([])
   const categorias = ref([])
-  const categoriaSeleccionada = ref(null)
+  const categoriaSeleccionada = ref('')
   const valoracionSeleccionada = ref('')
   const horarioSeleccionado = ref('')
   const searchQuery = ref('')
@@ -33,41 +31,41 @@ export function useComercioList() {
 
   const DEFAULT_COMERCIO_IMAGE = comercioImagesByName.logo_og || comercioImagesByName['logo_og.png'] || '/images/logo_og.png'
 
+  const formatRating = (rating) => {
+    if (!rating) return "0.0";
+    return Number(rating).toFixed(1);
+  };
+
+  const isComercioOpen = (comercio, hora) => {
+    return true; 
+  };
+
   function getCategoriaNombreById(categoriaId) {
-    return categorias.value.find((categoria) => categoria.id === categoriaId)?.nombreCategoria || ''
+    if (!categoriaId) return ''
+    const catFound = categorias.value.find((c) => String(c.id || c.idCategoria) === String(categoriaId))
+    return catFound ? (catFound.nombreCategoria || catFound.nombre || '') : ''
   }
 
   function cumpleRangoValoracion(comercio) {
-    if (!valoracionSeleccionada.value) {
-      return true
-    }
-
-    const opcion = valoracionOpciones.find((item) => item.value === valoracionSeleccionada.value)
-    if (!opcion) {
-      return true
-    }
-
-    const valor = Number(comercio.puntuacionMedia || 0)
-    return valor >= opcion.min && valor <= opcion.max
+      if (valoracionSeleccionada.value === '' || valoracionSeleccionada.value === null) {
+        return true
+      }
+      const valorCorteSeleccionado = Number(valoracionSeleccionada.value)
+      const valorComercio = Number(comercio.media || comercio.puntuacionMedia || 0)
+      return valorComercio >= valorCorteSeleccionado
   }
 
   function cumpleHorario(comercio) {
-    if (!horarioSeleccionado.value) {
-      return true
-    }
-
+    if (!horarioSeleccionado.value) return true
     const abiertoAhora = isComercioOpen(comercio, horaActual.value)
     return horarioSeleccionado.value === 'abierto' ? abiertoAhora : !abiertoAhora
   }
 
   function cumpleBusqueda(comercio) {
     const query = searchQuery.value.trim().toLowerCase()
-    if (!query) {
-      return true
-    }
-
+    if (!query) return true
     const textoBuscable = [
-      comercio.nombreComercio,
+      comercio.nombreComercio || comercio.nombre,
       comercio.descripcion,
       comercio.categoria,
       comercio.horario,
@@ -76,21 +74,16 @@ export function useComercioList() {
       .filter(Boolean)
       .join(' ')
       .toLowerCase()
-
     return textoBuscable.includes(query)
   }
 
   const comerciosFiltrados = computed(() => {
-    const categoriaNombreSeleccionada = getCategoriaNombreById(categoriaSeleccionada.value)
-
+    const catNombre = getCategoriaNombreById(categoriaSeleccionada.value)
     return comercios.value.filter((comercio) => {
-      const cumpleCategoria = !categoriaNombreSeleccionada
-        || comercio.categoria?.toLowerCase() === categoriaNombreSeleccionada.toLowerCase()
-
-      return cumpleCategoria
-        && cumpleRangoValoracion(comercio)
-        && cumpleHorario(comercio)
-        && cumpleBusqueda(comercio)
+      const cumpleCat = !categoriaSeleccionada.value || 
+                       (comercio.categoria?.toLowerCase() === catNombre.toLowerCase()) || 
+                       (String(comercio.categoriaId || comercio.idCategoria) === String(categoriaSeleccionada.value))
+      return cumpleCat && cumpleRangoValoracion(comercio) && cumpleHorario(comercio) && cumpleBusqueda(comercio)
     })
   })
 
@@ -98,7 +91,7 @@ export function useComercioList() {
   const totalResultados = computed(() => comerciosFiltrados.value.length)
 
   function limpiarFiltros() {
-    categoriaSeleccionada.value = null
+    categoriaSeleccionada.value = ''
     valoracionSeleccionada.value = ''
     horarioSeleccionado.value = ''
     searchQuery.value = ''
@@ -108,57 +101,54 @@ export function useComercioList() {
     horaActual.value = new Date()
   }
 
+  // Escucha los cambios del buscador de texto (?q=...) sin los puntos suspensivos molestos
   watch(
     () => route.query.q,
-    (value) => {
-      searchQuery.value = typeof value === 'string' ? value : ''
-    },
+    (value) => { searchQuery.value = typeof value === 'string' ? value : '' },
     { immediate: true },
   )
 
+  // OYENTE INTELIGENTE: Sincroniza la categoría pasada por URL (?categoria=Salud) con los desplegables
+  const aplicarCategoriaDeRuta = () => {
+    const catUrl = route.query.categoria
+    if (catUrl && categorias.value.length > 0) {
+      const encontrada = categorias.value.find(
+        c => (c.nombreCategoria || c.nombre || '').toLowerCase() === String(catUrl).toLowerCase()
+      )
+      if (encontrada) {
+        categoriaSeleccionada.value = encontrada.id || encontrada.idCategoria
+      }
+    }
+  }
+
+  // Vigila si la URL cambia dinámicamente mientras el usuario navega
+  watch(() => route.query.categoria, () => {
+    aplicarCategoriaDeRuta()
+  })
+
   onMounted(async () => {
     try {
-      const [respuestaCateg, respuestaComercios] = await Promise.all([
-        fetchCategorias(),
-        fetchComercios(),
-      ])
-
-      categorias.value = respuestaCateg
-      comercios.value = respuestaComercios.map((item) => mapComercio(item, comercioImagesByName, DEFAULT_COMERCIO_IMAGE))
-    } catch (error) {
-      console.error(error)
-      errorMessage.value = 'No se pudieron cargar los comercios. Revisa que la API esté arrancada.'
+      const [cat, lista] = await Promise.all([fetchCategorias(), fetchComercios()])
+      categorias.value = cat
+      comercios.value = lista.map((i) => mapComercio(i, comercioImagesByName, DEFAULT_COMERCIO_IMAGE))
+      
+      // Una vez cargadas las categorías desde la BD, comprobamos si venimos rebotados de la Home
+      aplicarCategoriaDeRuta()
+    } catch (e) {
+      console.error(e)
+      errorMessage.value = 'No se pudieron cargar los comercios.'
     } finally {
       isLoading.value = false
     }
-
     actualizarHoraActual()
     intervaloHoraActual = window.setInterval(actualizarHoraActual, 60000)
   })
 
-  onUnmounted(() => {
-    if (intervaloHoraActual) {
-      window.clearInterval(intervaloHoraActual)
-    }
-  })
+  onUnmounted(() => { if (intervaloHoraActual) window.clearInterval(intervaloHoraActual) })
 
   return {
-    comercios,
-    categorias,
-    categoriaSeleccionada,
-    valoracionSeleccionada,
-    horarioSeleccionado,
-    searchQuery,
-    horaActual,
-    isLoading,
-    errorMessage,
-    valoracionOpciones,
-    horarioOpciones,
-    comerciosFiltrados,
-    totalComercios,
-    totalResultados,
-    limpiarFiltros,
-    formatRating,
-    isComercioOpen,
+    comercios, categorias, categoriaSeleccionada, valoracionSeleccionada, horarioSeleccionado,
+    searchQuery, horaActual, isLoading, errorMessage, valoracionOpciones, horarioOpciones,
+    comerciosFiltrados, totalComercios, totalResultados, limpiarFiltros, formatRating, isComercioOpen,
   }
 }

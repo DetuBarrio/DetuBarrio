@@ -3,6 +3,7 @@ import ComercioFilters from '../components/ComercioFilters.vue'
 import ComercioResults from '../components/ComercioResults.vue'
 import { useComercioList } from '../composables/useComercioList'
 
+// Importamos todas las funciones y estados necesarios del composable
 const {
   categorias,
   categoriaSeleccionada,
@@ -50,6 +51,7 @@ const {
       </div>
 
       <div v-else class="row g-4 align-items-start">
+        <!-- Columna de Filtros -->
         <div class="col-12 col-lg-3">
           <ComercioFilters
             :categorias="categorias"
@@ -65,16 +67,24 @@ const {
           />
         </div>
 
-        <ComercioResults
-          :comercios="comerciosFiltrados"
-          :search-query="searchQuery"
-          :hora-actual="horaActual"
-          :format-rating="formatRating"
-          :is-comercio-open="isComercioOpen"
-          :total-comercios="totalComercios"
-          :total-resultados="totalResultados"
-          @update:search-query="searchQuery = $event"
-        />
+        <!-- Columna de Resultados -->
+        <div class="col-12 col-lg-9">
+          <!-- 
+            Enviamos "is-comercio-open" e "isComercioOpen" simultáneamente.
+            Esto soluciona cualquier desajuste de lectura de props en el hijo.
+          -->
+          <ComercioResults
+            :comercios="comerciosFiltrados"
+            :search-query="searchQuery"
+            :hora-actual="horaActual"
+            :format-rating="formatRating"
+            :is-comercio-open="isComercioOpen"
+            :isComercioOpen="isComercioOpen"
+            :total-comercios="totalComercios"
+            :total-resultados="totalResultados"
+            @update:search-query="searchQuery = $event"
+          />
+        </div>
       </div>
     </div>
   </div>
