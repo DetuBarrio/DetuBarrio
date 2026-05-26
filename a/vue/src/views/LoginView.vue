@@ -27,8 +27,6 @@ const errorMessage = ref('')
 const registerErrorMessage = ref('')
 const successMessage = ref('')
 
-
-
 function syncTabFromRoute() {
   activeTab.value = route.query.tab === 'register' ? 'register' : 'login'
 }
@@ -203,10 +201,17 @@ onMounted(() => {
               <label class="form-label">Email</label>
               <input v-model="loginForm.email" type="email" class="form-control form-control-lg" placeholder="tu.email@ejemplo.com" required>
             </div>
-            <div class="mb-3">
+            <div class="mb-2">
               <label class="form-label">Contraseña</label>
               <input v-model="loginForm.password" type="password" class="form-control form-control-lg" placeholder="Introduce tu contraseña" required>
             </div>
+            
+            <div class="text-end mb-4">
+              <RouterLink to="/forgot-password" class="forgot-link text-decoration-none">
+                ¿Has olvidado tu contraseña?
+              </RouterLink>
+            </div>
+
             <button class="btn btn-primary w-100 btn-lg fw-bold" type="submit" :disabled="loading">
               {{ loading ? 'Entrando...' : 'Iniciar sesión' }}
             </button>
@@ -281,5 +286,18 @@ onMounted(() => {
 .login-form-panel { display: flex; align-items: center; justify-content: center; padding: 2rem; }
 .login-card { width: 100%; max-width: 520px; background: rgba(255, 255, 255, 0.96); border: 1px solid rgba(15, 23, 42, 0.08); border-radius: 1.75rem; padding: 2rem; }
 .login-note { border-radius: 1rem; padding: 0.9rem 1rem; background: #f8fbff; border: 1px solid #dbe6f7; color: #16355f; }
+
+/* 🎨 Estilos personalizados para el enlace */
+.forgot-link {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1b4f99; /* Tono de azul corporativo elegante acorde al hero */
+  transition: color 0.2s ease-in-out;
+}
+.forgot-link:hover {
+  color: #061732; /* Oscurece al pasar el ratón */
+  text-decoration: underline !important;
+}
+
 @media (max-width: 991.98px) { .login-shell { grid-template-columns: 1fr; } .login-form-panel { min-height: 100vh; } }
 </style>

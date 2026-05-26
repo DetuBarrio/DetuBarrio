@@ -50,7 +50,12 @@ public class SecurityConfig {
                 
                 // Endpoints de autenticación y salud
                 .requestMatchers("/api/health", "/api/categorias").permitAll()
-                .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
+                .requestMatchers(
+                    "/api/auth/login", 
+                    "/api/auth/register",
+                    "/api/auth/forgot-password", // 🔐 NUEVO: Permitido sin estar logueado
+                    "/api/auth/reset-password"   // 🔐 NUEVO: Permitido sin estar logueado
+                ).permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/disponibilidades/**").permitAll()
 
                 // 🔐 REGLA CORREGIDA (SUBIDA): Protege el POST de opiniones ANTES de dar permisos generales
