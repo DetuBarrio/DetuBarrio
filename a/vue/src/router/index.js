@@ -5,10 +5,12 @@ import ComercioDetailView from '../views/ComercioDetailView.vue'
 import AboutView from '../views/AboutView.vue'
 import ContactoView from '../views/ContactoView.vue'
 import LoginView from '../views/LoginView.vue'
+import ForgotPasswordView from '../views/ForgotPasswordView.vue' // 🔐 IMPORTACIÓN AÑADIDA
 import AdminView from '../views/AdminView.vue'
 import AdminPendingCommercesView from '../views/AdminPendingCommercesView.vue'
 import UsuarioDashboardView from '../views/UsuarioDashboardView.vue'
 import ComercioDashboardView from '../views/ComercioDashboardView.vue'
+import ResetPasswordView from '../views/ResetPasswordView.vue'
 import FavoritosView from '../views/FavoritosView.vue' // 🌟 IMPORTACIÓN AÑADIDA
 import { getAuth } from '../services/authService'
 
@@ -71,6 +73,22 @@ const router = createRouter({
       component: LoginView,
       meta: {
         guestOnly: true,
+      },
+    },
+    {
+      path: '/forgot-password', // 🔐 RUTA DE RECUPERACIÓN AÑADIDA
+      name: 'forgot-password',
+      component: ForgotPasswordView,
+      meta: {
+        guestOnly: true, // Para que si ya está logueado, lo redirija a su sitio
+      },
+    },
+    {
+      path: '/reset-password', // 🔐 NUEVA RUTA: Establecer nueva contraseña
+      name: 'reset-password',
+      component: ResetPasswordView,
+      meta: {
+        guestOnly: true, // Solo accesible para usuarios sin sesión activa
       },
     },
     {
