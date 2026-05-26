@@ -16,6 +16,7 @@ public interface ComercioRepository extends JpaRepository<Comercio, Long> {
     @Query("SELECT c FROM Comercio c LEFT JOIN FETCH c.disponibilidades WHERE c.id = :id")
     Optional<Comercio> findByIdWithDisponibilidades(@Param("id") Long id);
 
+    // A
     // --- TUS MÉTODOS EXISTENTES ---
     Optional<Comercio> findByUsuarioCreadorId(Long usuarioId);
     List<Comercio> findByCategoriaId(Long categoriaId);
