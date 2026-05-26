@@ -1,13 +1,12 @@
-# Etapa 1: Compilar el código Java con Maven
-FROM maven:3.9.6-eclipse-temurin-17 AS build
+# Etapa 1: Compilar el código Java con Maven (Cambiado a Java 21)
+FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
 COPY . .
-# ¡Esta es la línea mágica que da los permisos!
 RUN chmod +x mvnw
 RUN ./mvnw clean package -DskipTests
 
-# Etapa 2: Ejecutar el archivo .jar resultante en un entorno ligero de Java
-FROM eclipse-temurin:17-jre-jammy
+# Etapa 2: Ejecutar el archivo .jar resultante en Java 21
+FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
