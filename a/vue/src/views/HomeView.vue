@@ -1,24 +1,77 @@
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter, RouterLink } from 'vue-router'
 import fondo from '../assets/images/fondo.png';
-import buenaMesa from '../assets/images/buenaMesa.png';
-import estiloUrbano from '../assets/images/estiloUrbano.png';
-import patasFelices from '../assets/images/patasFelices.png';
-import fontanero from '../assets/images/fontanero.png';
+import comercioDefault from '../assets/images/buenaMesa.png'; 
 
 const router = useRouter()
 const searchTerm = ref('')
+const comerciosDestacados = ref([])
+
+const API_URL = 'http://localhost:8080'
+
+// Detecta automáticamente todas las imágenes procesadas por Vite en assets
+const comercioImageModules = import.meta.glob('../assets/images/*.{png,jpg,jpeg,webp,svg,gif}', {
+  eager: true,
+  import: 'default',
+})
+
+const comercioImagesByName = Object.fromEntries(
+  Object.entries(comercioImageModules).map(([path, url]) => [path.split('/').pop(), url]),
+)
+
+// Función inteligente idéntica a la de Comercios y Detalle
+function getImagenComercio(imageUrl) {
+  if (!imageUrl) {
+    return comercioDefault // Si es null, usamos la imagen por defecto importada
+  }
+
+  if (typeof imageUrl === 'string' && imageUrl.startsWith('/uploads')) {
+    return `${API_URL}${imageUrl}`
+  }
+
+  if (/^https?:\/\//i.test(imageUrl) || imageUrl.startsWith('data:')) {
+    return imageUrl
+  }
+
+  const fileName = imageUrl.split('/').pop()
+  if (comercioImagesByName[fileName]) {
+    return comercioImagesByName[fileName]
+  }
+
+  const cleanedImage = imageUrl.replace(/^\.\//, '').replace(/^images\//, '')
+  const cleanedName = cleanedImage.split('/').pop()
+
+  if (comercioImagesByName[cleanedName]) {
+    return comercioImagesByName[cleanedName]
+  }
+
+  return imageUrl.startsWith('/') ? imageUrl : `/images/${cleanedName}`
+}
 
 function buscarComercios() {
   const query = searchTerm.value.trim()
-
   router.push({
     path: '/comercios',
     query: query ? { q: query } : {},
   })
 }
 
+onMounted(async () => {
+  try {
+    const response = await fetch('http://localhost:8080/api/comercios')
+    if (response.ok) {
+      const data = await response.json()
+      
+      // Ordenamos por valoración media (de mayor a menor)
+      comerciosDestacados.value = data
+        .sort((a, b) => (b.media || b.puntuacionMedia || 0) - (a.media || a.puntuacionMedia || 0))
+        .slice(0, 4) // Cogemos solo los 4 mejores
+    }
+  } catch (error) {
+    console.error("Error al cargar los comercios destacados:", error)
+  }
+})
 </script>
 
 <template>
@@ -90,14 +143,12 @@ function buscarComercios() {
           <div class="col-md-4">
             <div class="card h-100 border-0 shadow-sm py-4 rounded-4">
               <div class="card-body">
-                <div
-                  class="bg-light d-inline-block p-3 rounded-circle mb-3 text-primary"
-                >
+                <div class="bg-light d-inline-block p-3 rounded-circle mb-3 text-primary">
                   <i class="bi bi-heart-fill fs-3"></i>
                 </div>
                 <h5 class="fw-bold">Apoyo Local</h5>
                 <p class="text-muted small px-3">
-                  Cada compra que haces ayuda a un emprendedor de tu comunidad.
+                  Cada servicio que haces ayuda a un emprendedor de tu comunidad.
                 </p>
               </div>
             </div>
@@ -105,9 +156,7 @@ function buscarComercios() {
           <div class="col-md-4">
             <div class="card h-100 border-0 shadow-sm py-4 rounded-4">
               <div class="card-body">
-                <div
-                  class="bg-light d-inline-block p-3 rounded-circle mb-3 text-primary"
-                >
+                <div class="bg-light d-inline-block p-3 rounded-circle mb-3 text-primary">
                   <i class="bi bi-map-fill fs-3"></i>
                 </div>
                 <h5 class="fw-bold">Comodidad</h5>
@@ -120,14 +169,12 @@ function buscarComercios() {
           <div class="col-md-4">
             <div class="card h-100 border-0 shadow-sm py-4 rounded-4">
               <div class="card-body">
-                <div
-                  class="bg-light d-inline-block p-3 rounded-circle mb-3 text-primary"
-                >
+                <div class="bg-light d-inline-block p-3 rounded-circle mb-3 text-primary">
                   <i class="bi bi-bag-fill fs-3"></i>
                 </div>
                 <h5 class="fw-bold">Variedad</h5>
                 <p class="text-muted small px-3">
-                  Descubre una gran oferta de productos y servicios únicos.
+                  Descubre una gran oferta de productos y servicios uniques.
                 </p>
               </div>
             </div>
@@ -140,30 +187,28 @@ function buscarComercios() {
       <div class="container text-center">
         <h3 class="fw-bold mb-5">Explora por Categoría</h3>
         <div class="d-flex flex-wrap justify-content-center gap-5">
-          <RouterLink
-            to="/comercios"
+          
+          <button
+            @click="router.push({ path: '/comercios', query: { categoria: 'Salud' } })"
             class="btn btn-white shadow-sm rounded-4 px-5 py-4 d-flex align-items-center gap-3 fw-bold text-dark border fs-5"
           >
-            <i class="bi bi-cup-hot-fill text-primary"></i> Restaurantes
-          </RouterLink>
-          <RouterLink
-            to="/comercios"
+            <i class="bi bi-heart-pulse-fill text-primary"></i> Salud
+          </button>
+
+          <button
+            @click="router.push({ path: '/comercios', query: { categoria: 'Estilismo' } })"
             class="btn btn-white shadow-sm rounded-4 px-5 py-4 d-flex align-items-center gap-3 fw-bold text-dark border fs-5"
           >
-            <i class="bi bi-shop text-primary"></i> Tiendas
-          </RouterLink>
-          <RouterLink
-            to="/comercios"
+            <i class="bi bi-scissors text-primary"></i> Estilismo
+          </button>
+
+          <button
+            @click="router.push({ path: '/comercios', query: { categoria: 'Otros' } })"
             class="btn btn-white shadow-sm rounded-4 px-5 py-4 d-flex align-items-center gap-3 fw-bold text-dark border fs-5"
           >
-            <i class="bi bi-flower1 text-primary"></i> Salud y Belleza
-          </RouterLink>
-          <RouterLink
-            to="/comercios"
-            class="btn btn-white shadow-sm rounded-4 px-5 py-4 d-flex align-items-center gap-3 fw-bold text-dark border fs-5"
-          >
-            <i class="bi bi-house-door-fill text-primary"></i> Hogar
-          </RouterLink>
+            <i class="bi bi-three-dots text-primary"></i> Otros
+          </button>
+
         </div>
       </div>
     </section>
@@ -171,94 +216,41 @@ function buscarComercios() {
     <section class="py-5 bg-light">
       <div class="container">
         <h3 class="fw-bold text-center mb-5">Nuestros Comercios Destacados</h3>
-        <div class="row g-4">
-          <div class="col-md-6 col-lg-3">
-            <div
-              class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden"
-            >
-              <img
-                :src="buenaMesa"
-                class="card-img-top"
-                alt="Restaurante"
-                style="height: 150px; object-fit: cover"
-              />
-              <div class="card-body">
-                <h6 class="fw-bold mb-0">La Buena Mesa</h6>
-                <small class="text-muted">Restaurante</small>
-                <div class="text-warning small mt-2">
-                  <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i
-                  ><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i
-                  ><i class="bi bi-star-half"></i>
-                  <span class="text-muted">(124)</span>
-                </div>
-              </div>
-            </div>
+        
+        <div v-if="comerciosDestacados.length === 0" class="text-center text-muted">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
           </div>
-          <div class="col-md-6 col-lg-3">
-            <div
-              class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden"
+        </div>
+
+        <div v-else class="row g-4">
+          <div class="col-md-6 col-lg-3" v-for="comercio in comerciosDestacados" :key="comercio.id">
+            <RouterLink 
+              :to="{ name: 'comercio-detalle', params: { id: comercio.id } }" 
+              class="text-decoration-none text-dark"
             >
-              <img
-                :src="estiloUrbano"
-                class="card-img-top"
-                alt="Peluqueria"
-                style="height: 150px; object-fit: cover"
-              />
-              <div class="card-body">
-                <h6 class="fw-bold mb-0">Estilo Urbano</h6>
-                <small class="text-muted">Peluquería</small>
-                <div class="text-warning small mt-2">
-                  <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i
-                  ><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i
-                  ><i class="bi bi-star"></i>
-                  <span class="text-muted">(89)</span>
+              <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden card-hover">
+                <img
+                  :src="getImagenComercio(comercio.logo)"
+                  class="card-img-top"
+                  :alt="comercio.nombreComercio"
+                  style="height: 150px; object-fit: cover"
+                />
+                <div class="card-body">
+                  <h6 class="fw-bold mb-0 text-truncate">{{ comercio.nombreComercio }}</h6>
+                  <small class="text-muted">{{ comercio.categoria }}</small>
+                  
+                  <div class="text-warning small mt-2 d-flex align-items-center gap-1">
+                    <template v-for="n in 5" :key="n">
+                      <i class="bi" :class="n <= Math.round(comercio.media || comercio.puntuacionMedia || 0) ? 'bi-star-fill' : 'bi-star text-muted'"></i>
+                    </template>
+                    <span class="text-muted ms-1">
+                      {{ (comercio.media || comercio.puntuacionMedia) ? Number(comercio.media || comercio.puntuacionMedia).toFixed(1) : '0.0' }} ({{ comercio.total || comercio.totalResenas || 0 }})
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-          <div class="col-md-6 col-lg-3">
-            <div
-              class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden"
-            >
-              <img
-                :src="fontanero"
-                class="card-img-top"
-                alt="Fontaneria"
-                style="height: 150px; object-fit: cover"
-              />
-              <div class="card-body">
-                <h6 class="fw-bold mb-0">ReparaTodo</h6>
-                <small class="text-muted">Fontanería</small>
-                <div class="text-warning small mt-2">
-                  <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i
-                  ><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i
-                  ><i class="bi bi-star-fill"></i>
-                  <span class="text-muted">(150)</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-6 col-lg-3">
-            <div
-              class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden"
-            >
-              <img
-                :src="patasFelices"
-                class="card-img-top"
-                alt="Mascotas"
-                style="height: 150px; object-fit: cover"
-              />
-              <div class="card-body">
-                <h6 class="fw-bold mb-0">Patitas Felices</h6>
-                <small class="text-muted">Mascotas</small>
-                <div class="text-warning small mt-2">
-                  <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i
-                  ><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i
-                  ><i class="bi bi-star-half"></i>
-                  <span class="text-muted">(210)</span>
-                </div>
-              </div>
-            </div>
+            </RouterLink>
           </div>
         </div>
       </div>
@@ -276,7 +268,7 @@ function buscarComercios() {
                 Encuentra comercios únicos, servicios de confianza y ofertas
                 especiales cerca de ti.
               </p>
-              <button class="btn btn-primary">Explorar Comercios</button>
+              <RouterLink to="/comercios" class="btn btn-primary">Explorar Comercios</RouterLink>
             </div>
           </div>
           <div class="col-md-6">
@@ -288,9 +280,9 @@ function buscarComercios() {
                 Digitaliza tu comercio, llega a más vecinos y haz crecer tus
                 ventas.
               </p>
-              <button class="btn btn-light fw-bold text-dark">
+              <RouterLink to="/login?tab=register" class="btn btn-light fw-bold text-dark">
                 Regístrate Ahora
-              </button>
+              </RouterLink>
             </div>
           </div>
         </div>
@@ -300,9 +292,17 @@ function buscarComercios() {
 
 <style scoped>
   :root {
-        --db-primary: #003366; /* Azul oscuro */
-        --db-secondary: #3a86ff; /* Azul brillante para botones */
-        --db-success: #28a745; /* Verde para 'Abierto' */
-        --db-danger: #dc3545; /* Rojo para 'Cerrado' */
-      }
+        --db-primary: #003366; 
+        --db-secondary: #3a86ff; 
+        --db-success: #28a745; 
+        --db-danger: #dc3545; 
+  }
+
+  .card-hover {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  }
+  .card-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+  }
 </style>

@@ -3,9 +3,12 @@ package detubarrio.rest.service;
 import detubarrio.rest.dto.ReservaDTO;
 import detubarrio.rest.model.Reserva;
 import detubarrio.rest.model.Disponibilidad;
+import detubarrio.rest.model.Usuario;
 import detubarrio.rest.repository.ReservaRepository;
 import detubarrio.rest.repository.DisponibilidadRepository;
 import detubarrio.rest.repository.UsuarioRepository;
+import detubarrio.rest.repository.ComercioRepository; // Inyectamos este para sacar el nombre del negocio
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +28,15 @@ public class ReservaService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    @Autowired
+    private ComercioRepository comercioRepository; // Requerido para saber el nombre en el PDF
+
+    @Autowired
+    private PdfService pdfService;
+
+    @Autowired
+    private EmailService emailService;
+
     @Transactional
     public Reserva crearReserva(ReservaDTO dto) {
         Disponibilidad disp = disponibilidadRepository.findById(dto.getIdDisponibilidad())
@@ -40,7 +52,26 @@ public class ReservaService {
         reserva.setIdServicio(dto.getIdServicio());
         reserva.setEstadoReserva("CONFIRMADA");
 
-        return reservaRepository.save(reserva);
+        Reserva reservaGuardada = reservaRepository.save(reserva);
+
+        // 🌟 DISPARO AUTOMÁTICO DEL PDF Y EMAIL TRAS GUARDAR LA RESERVA
+        try {
+            Usuario usuario = usuarioRepository.findById(dto.getIdUsuario()).orElse(null);
+            String nombreComercio = comercioRepository.findById(dto.getIdComercio())
+                    .map(c -> c.getNombreComercio()).orElse("Comercio Local");
+
+            if (usuario != null && usuario.getEmail() != null) {
+                // 1. Generamos el PDF
+                byte[] documentoPdf = pdfService.generarPdfReserva(reservaGuardada, usuario, nombreComercio);
+                // 2. Enviamos el email usando hilos paralelos de fondo
+                emailService.enviarEmailConPdf(usuario.getEmail(), usuario.getNombre(), nombreComercio, documentoPdf);
+            }
+        } catch (Exception ex) {
+            // Ponemos un trycatch para que si falla el email por mala señal, la reserva en la web NO se rompa
+            System.err.println("Alerta: La reserva se creó pero el email falló: " + ex.getMessage());
+        }
+
+        return reservaGuardada;
     }
 
     @Transactional(readOnly = true)
@@ -65,7 +96,6 @@ public class ReservaService {
         reserva.setEstadoReserva("CANCELADA");
         reservaRepository.save(reserva);
 
-        // Liberamos el hueco horario para que otra persona pueda reservar
         if (reserva.getDisponibilidad() != null) {
             Disponibilidad disp = reserva.getDisponibilidad();
             disp.setReservado(false);
@@ -79,8 +109,6 @@ public class ReservaService {
         dto.setIdUsuario(reserva.getIdUsuario());
         dto.setIdComercio(reserva.getIdComercio());
         dto.setIdServicio(reserva.getIdServicio());
-        
-        // 🛠️ Ahora sí compilará perfectamente usando el campo estándar de tu entidad:
         dto.setEstadoReserva(reserva.getEstadoReserva());
         
         if (reserva.getDisponibilidad() != null) {

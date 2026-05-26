@@ -29,7 +29,6 @@ function handleLogout() {
   clearAuth()
   router.push('/')
 }
-
 </script>
 
 <template>
@@ -64,6 +63,9 @@ function handleLogout() {
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center">
             <li class="nav-item">
+              <RouterLink class="nav-link text-secondary fw-medium" to="/">Inicio</RouterLink>
+            </li>
+            <li class="nav-item">
               <RouterLink class="nav-link text-primary fw-medium" to="/comercios">Comercios</RouterLink>
             </li>
             <li class="nav-item">
@@ -75,11 +77,14 @@ function handleLogout() {
             <li v-if="isAdmin" class="nav-item">
               <RouterLink class="nav-link text-secondary fw-medium" to="/admin">Admin</RouterLink>
             </li>
+            
+            <!-- Icono de Favoritos -->
             <li v-if="isLoggedIn" class="nav-item ms-lg-2">
-              <button class="nav-link icon-link" type="button" aria-label="Favoritos">
-                <i class="bi bi-heart"></i>
-              </button>
+              <RouterLink class="nav-link icon-link" to="/favoritos" aria-label="Favoritos" title="Mis Favoritos">
+                <i class="bi bi-heart-fill text-danger"></i>
+              </RouterLink>
             </li>
+
             <li v-if="isLoggedIn" class="nav-item dropdown ms-lg-2">
               <button
                 class="btn btn-outline-primary user-pill dropdown-toggle d-flex align-items-center gap-2"
@@ -155,7 +160,7 @@ function handleLogout() {
         </div>
 
         <div class="footer-divider text-center small text-white-50">
-          © 2024 DetuBarrio. Todos los derechos reservados.
+          © 2026 DetuBarrio. Todos los derechos reservados.
         </div>
       </div>
     </footer>
@@ -172,6 +177,12 @@ function handleLogout() {
   border-radius: 999px;
   color: var(--db-primary);
   background: white;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.icon-link:hover {
+  transform: scale(1.05);
+  background-color: #fff5f5;
 }
 
 .user-pill {
@@ -200,5 +211,4 @@ function handleLogout() {
   background-color: rgba(47, 115, 224, 0.12);
   color: var(--db-primary);
 }
-
 </style>

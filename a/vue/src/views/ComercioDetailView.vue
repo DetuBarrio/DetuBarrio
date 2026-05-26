@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { fetchComercioById } from '../services/comercioService'
 import axios from 'axios' 
@@ -11,18 +11,14 @@ import fontaneroImage from '../assets/images/fontanero.png'
 import buenaMesaImage from '../assets/images/buenaMesa.png'
 import SeccionReservas from './SeccionReservas.vue'
 
-// 🎯 IMPORTACIÓN CORREGIDA: Traemos getAuth para usar la misma lógica que las reservas
 import { getAuth } from '../services/authService' 
 
 const route = useRoute()
 const comercio = ref(null)
 const isLoading = ref(true)
 const errorMessage = ref('')
-
-// --- VARIABLES PARA EL FORMULARIO DE RESEÑAS ---
 const enviando = ref(false)
 
-// 🎯 LÓGICA CORREGIDA: Idéntica a la que usas en SeccionReservas.vue
 const isLoggedIn = computed(() => {
   const authData = getAuth();
   const token = authData?.token || localStorage.getItem('token');
@@ -35,10 +31,49 @@ const nuevaResena = ref({
   comentario: '',
   valoracion: 5
 })
-// -----------------------------------------------------------------------
 
-// Configuración del servidor Backend
+const esFavorito = ref(false)
 const API_URL = 'http://localhost:8080'
+
+// --- NUEVA LÓGICA DE FAVORITOS (CONECTADA AL BACKEND) ---
+async function comprobarFavorito() {
+  if (!comercio.value || !isLoggedIn.value) return
+  
+  try {
+    const authData = getAuth()
+    const token = authData?.token || localStorage.getItem('token')
+    
+    // Obtenemos la lista de favoritos del usuario para ver si este comercio está
+    const response = await axios.get(`${API_URL}/api/favoritos`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    
+    const listadoActual = response.data
+    esFavorito.value = listadoActual.some(item => Number(item.id) === Number(comercio.value.id))
+  } catch (error) {
+    console.error("Error al comprobar favorito:", error)
+  }
+}
+
+async function conmutarFavorito() {
+  if (!comercio.value || !isLoggedIn.value) return
+  
+  try {
+    const authData = getAuth()
+    const token = authData?.token || localStorage.getItem('token')
+    
+    // El backend hace el trabajo sucio y nos devuelve "true" si se añadió o "false" si se quitó
+    const response = await axios.post(`${API_URL}/api/favoritos/${comercio.value.id}`, {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    
+    esFavorito.value = response.data
+  } catch (error) {
+    console.error("Error al conmutar favorito:", error)
+    alert("Hubo un error al actualizar tus favoritos.")
+  }
+}
+// -----------------------------------------------------------------------
 
 const comercioImageModules = import.meta.glob('../assets/images/*.{png,jpg,jpeg,webp,svg,gif}', {
   eager: true,
@@ -51,96 +86,33 @@ const comercioImagesByName = Object.fromEntries(
 
 const DEFAULT_IMAGE = comercioImagesByName.logo_og || comercioImagesByName['logo_og.png'] || '/images/logo_og.png'
 
-const PRODUCT_IMAGE_CATALOG = {
-  'panaderia el trigal': {
-    'pan de masa madre': panaderiaPan,
-    'croissant de mantequilla': panaderiaCruasant,
-    default: panaderiaPan,
-  },
-  'el sabor casero': {
-    'menu del dia': buenaMesaImage,
-    default: saborImage,
-  },
-  'el tornillo feliz': {
-    'kit basico bricolaje': fontaneroImage,
-    default: torfelizImage,
-  },
-}
-
-const FALLBACK_PRODUCT_IMAGES = [
-  panaderiaPan,
-  panaderiaCruasant,
-  buenaMesaImage,
-  saborImage,
-  fontaneroImage,
-  torfelizImage,
-]
-
 function normalizeImageUrl(imageUrl) {
-  if (!imageUrl) {
-    return DEFAULT_IMAGE
-  }
-
-  if (typeof imageUrl === 'string' && imageUrl.startsWith('/uploads')) {
-    return `${API_URL}${imageUrl}`
-  }
-
-  if (/^https?:\/\//i.test(imageUrl) || imageUrl.startsWith('data:')) {
-    return imageUrl
-  }
+  if (!imageUrl) return DEFAULT_IMAGE
+  if (typeof imageUrl === 'string' && imageUrl.startsWith('/uploads')) return `${API_URL}${imageUrl}`
+  if (/^https?:\/\//i.test(imageUrl) || imageUrl.startsWith('data:')) return imageUrl
 
   const fileName = imageUrl.split('/').pop()
-  if (comercioImagesByName[fileName]) {
-    return comercioImagesByName[fileName]
-  }
+  if (comercioImagesByName[fileName]) return comercioImagesByName[fileName]
 
   const cleanedImage = imageUrl.replace(/^\.\//, '').replace(/^images\//, '')
   const cleanedName = cleanedImage.split('/').pop()
-
-  if (comercioImagesByName[cleanedName]) {
-    return comercioImagesByName[cleanedName]
-  }
+  if (comercioImagesByName[cleanedName]) return comercioImagesByName[cleanedName]
 
   return imageUrl.startsWith('/') ? imageUrl : `/images/${cleanedName}`
 }
 
-function getProductoImage(producto, index = 0) {
-  const comercioKey = (comercio.value?.nombreComercio || '').trim().toLowerCase()
-  const productoKey = (producto?.nombreProducto || '').trim().toLowerCase()
-  const comercioCatalog = PRODUCT_IMAGE_CATALOG[comercioKey]
-
-  if (comercioCatalog) {
-    if (comercioCatalog[productoKey]) {
-      return comercioCatalog[productoKey]
-    }
-
-    return comercioCatalog.default || FALLBACK_PRODUCT_IMAGES[index % FALLBACK_PRODUCT_IMAGES.length]
-  }
-
-  if (producto?.imagen) {
-    return normalizeImageUrl(producto.imagen)
-  }
-
-  return FALLBACK_PRODUCT_IMAGES[index % FALLBACK_PRODUCT_IMAGES.length]
-}
-
 const heroImage = computed(() => normalizeImageUrl(comercio.value?.banner || comercio.value?.logo))
 const logoImage = computed(() => normalizeImageUrl(comercio.value?.logo || comercio.value?.banner))
-const productos = computed(() => comercio.value?.productos || [])
 const resenas = computed(() => comercio.value?.resenas || [])
 const ratingValue = computed(() => Number(comercio.value?.puntuacionMedia || 0).toFixed(1))
 const totalResenas = computed(() => Number(comercio.value?.totalResenas || 0))
 
 const ratingDistribution = computed(() => {
   const counts = [1, 2, 3, 4, 5].map((valoracion) => ({ valoracion, count: 0 }))
-
   for (const resena of resenas.value) {
     const entry = counts.find((item) => item.valoracion === Number(resena.valoracion))
-    if (entry) {
-      entry.count += 1
-    }
+    if (entry) entry.count += 1
   }
-
   return counts.reverse().map((item) => ({
     ...item,
     percentage: totalResenas.value ? Math.round((item.count / totalResenas.value) * 100) : 0,
@@ -148,37 +120,30 @@ const ratingDistribution = computed(() => {
 })
 
 function formatCurrency(value) {
-  const amount = Number(value || 0)
-  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(amount)
+  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(Number(value || 0))
 }
 
 function formatDate(value) {
-  if (!value) {
-    return ''
-  }
-
-  return new Intl.DateTimeFormat('es-ES', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value))
+  if (!value) return ''
+  return new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
 }
 
 function buildStarIcons(value) {
   const rating = Number(value || 0)
   const fullStars = Math.floor(rating)
-  const hasHalfStar = rating - fullStars >= 0.5
-  const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0)
-
   return {
     fullStars,
-    hasHalfStar,
-    emptyStars,
+    hasHalfStar: rating - fullStars >= 0.5,
+    emptyStars: 5 - fullStars - (rating - fullStars >= 0.5 ? 1 : 0),
   }
+}
+
+function getInitials(name) {
+  return name ? name.charAt(0).toUpperCase() : 'U'
 }
 
 async function loadComercio() {
   const comercioId = Number(route.params.id)
-
   if (!Number.isFinite(comercioId) || comercioId <= 0) {
     errorMessage.value = 'El identificador del comercio no es válido.'
     isLoading.value = false
@@ -190,9 +155,10 @@ async function loadComercio() {
 
   try {
     comercio.value = await fetchComercioById(comercioId)
+    await comprobarFavorito() // Comprobamos en el backend si es favorito
   } catch (error) {
     console.error(error)
-    errorMessage.value = 'No se pudo cargar el detalle del comercio. Revisa que la API esté arrancada.'
+    errorMessage.value = 'No se pudo cargar el detalle del comercio.'
     comercio.value = null
   } finally {
     isLoading.value = false
@@ -201,34 +167,21 @@ async function loadComercio() {
 
 async function enviarResena() {
   if (nuevaResena.value.titulo.trim() === '' || nuevaResena.value.comentario.trim() === '') return
-
   enviando.value = true
   try {
-    // 🎯 OBTENCIÓN DEL TOKEN CORREGIDA: Asegura obtener el token activo real
     const authData = getAuth();
     const token = authData?.token || localStorage.getItem('token')
-    const comercioId = comercio.value.id
-
     await axios.post(
-      `${API_URL}/api/comercios/${comercioId}/resenas`,
-      {
-        titulo: nuevaResena.value.titulo,
-        comentario: nuevaResena.value.comentario,
-        valoracion: nuevaResena.value.valoracion
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
+      `${API_URL}/api/comercios/${comercio.value.id}/resenas`,
+      { titulo: nuevaResena.value.titulo, comentario: nuevaResena.value.comentario, valoracion: nuevaResena.value.valoracion },
+      { headers: { Authorization: `Bearer ${token}` } }
     )
-
     nuevaResena.value = { titulo: '', comentario: '', valoracion: 5 }
     alert('¡Tu opinión se ha compartido con éxito!')
     await loadComercio() 
   } catch (error) {
     console.error("Error al publicar la reseña:", error)
-    alert('No se pudo guardar la reseña. Revisa que tu sesión siga activa.')
+    alert('No se pudo guardar la reseña.')
   } finally {
     enviando.value = false
   }
@@ -256,21 +209,36 @@ watch(() => route.params.id, loadComercio, { immediate: true })
 
       <template v-else-if="comercio">
         <div class="mb-4">
-          <RouterLink class="btn btn-outline-secondary rounded-pill mb-3" to="/comercios">
+          <RouterLink class="btn btn-action-back rounded-pill mb-3 px-4 shadow-sm" to="/comercios">
             <i class="bi bi-arrow-left me-2"></i> Volver al listado
           </RouterLink>
 
-          <div class="detail-hero card border-0 shadow-sm overflow-hidden rounded-5">
+          <div class="detail-hero card border-0 shadow-lg overflow-hidden rounded-5">
             <div class="position-relative">
               <img :src="heroImage" class="detail-hero-image w-100" :alt="comercio.nombreComercio" />
+              
+              <button 
+                v-if="isLoggedIn"
+                @click="conmutarFavorito" 
+                class="btn btn-favorito-floating position-absolute top-0 end-0 m-4 shadow-lg rounded-circle d-flex align-items-center justify-content-center"
+                :class="{ 'activo': esFavorito }"
+                :title="esFavorito ? 'Quitar de favoritos' : 'Añadir a favoritos'"
+                style="z-index: 5; width: 48px; height: 48px;"
+              >
+                <i class="bi fs-4" :class="esFavorito ? 'bi-heart-fill' : 'bi-heart'"></i>
+              </button>
+
               <div class="detail-hero-overlay position-absolute bottom-0 start-0 w-100 p-4 p-lg-5 text-white">
-                <div class="d-flex flex-wrap align-items-end justify-content-between gap-3">
+                <div class="glass-content p-4 rounded-4 d-flex flex-wrap align-items-end justify-content-between gap-3">
                   <div>
-                    <p class="text-uppercase small fw-semibold mb-2 opacity-75">{{ comercio.categoria }}</p>
-                    <h1 class="display-6 fw-bold mb-1">{{ comercio.nombreComercio }}</h1>
-                    <p class="mb-0 opacity-90">{{ comercio.descripcion }}</p>
+                    <span class="badge bg-primary text-uppercase mb-2 tracking-wider px-3 py-1.5 fs-7 rounded-pill shadow-sm">
+                      {{ comercio.categoria }}
+                    </span>
+                    <h1 class="display-5 fw-extrabold mb-1 mt-1 text-shadow-sm">{{ comercio.nombreComercio }}</h1>
+                    <p class="mb-0 text-light opacity-90 fs-5">{{ comercio.descripcion }}</p>
                   </div>
-                  <span class="badge rounded-pill bg-success px-3 py-2">
+                  <span class="badge rounded-pill bg-success-gradient px-4 py-2 fs-6 shadow-sm">
+                    <i class="bi bi-patch-check-fill me-1"></i>
                     {{ comercio.puntuacionMedia >= 4 ? 'Muy valorado' : 'Comercio local' }}
                   </span>
                 </div>
@@ -281,50 +249,33 @@ watch(() => route.params.id, loadComercio, { immediate: true })
 
         <div class="row g-4 align-items-start">
           <div class="col-12 col-lg-8">
-            <section class="card border-0 shadow-sm rounded-4 p-4 mb-4">
-              <h2 class="h4 fw-bold mb-3">Sobre nosotros</h2>
-              <p class="text-muted mb-0">{{ comercio.descripcion || 'Este comercio todavía no ha añadido una descripción.' }}</p>
-            </section>
-
-            <section class="mb-4">
-              <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
-                <h2 class="h4 fw-bold mb-0">Nuestros productos estrella</h2>
-                <span class="text-muted small">{{ productos.length }} productos</span>
-              </div>
-
-              <div class="row g-3">
-                <div v-for="(producto, index) in productos" :key="producto.id || producto.nombreProducto" class="col-12 col-md-6">
-                  <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden product-card">
-                    <img :src="getProductoImage(producto, index)" class="product-card-image" :alt="producto.nombreProducto" />
-                    <div class="card-body">
-                      <h3 class="h6 fw-bold mb-1">{{ producto.nombreProducto }}</h3>
-                      <p class="text-muted small mb-2">{{ producto.descripcion || 'Sin descripción' }}</p>
-                      <p class="fw-semibold mb-0">{{ formatCurrency(producto.precio) }}</p>
-                    </div>
-                  </div>
+            <section class="card card-custom-layout border-0 shadow-sm rounded-4 p-4 mb-4">
+              <div class="d-flex align-items-center gap-2 mb-3">
+                <div class="icon-shape bg-primary-light text-primary rounded-3 p-2">
+                  <i class="bi bi-shop fs-4"></i>
                 </div>
-                <div v-if="!productos.length" class="col-12">
-                  <div class="alert alert-light border mb-0">Este comercio aún no tiene productos publicados.</div>
-                </div>
+                <h2 class="h4 fw-bold mb-0">Sobre nosotros</h2>
               </div>
+              <p class="text-secondary mb-0 leading-relaxed">{{ comercio.descripcion || 'Este comercio todavía no ha añadido una descripción.' }}</p>
             </section>
 
             <SeccionReservas 
               v-if="comercio"
               :idComercio="comercio.id" 
               :disponibilidades="comercio.disponibilidades || []" 
+              class="shadow-sm rounded-4 border-0 mb-4"
             />
 
-            <section class="card border-0 shadow-sm rounded-4 p-4 mt-4">
+            <section class="card card-custom-layout border-0 shadow-sm rounded-4 p-4 mt-4">
               <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
                 <div>
-                  <h2 class="h4 fw-bold mb-1">Opiniones de clientes</h2>
-                  <p class="text-muted mb-0">{{ totalResenas }} reseñas publicadas</p>
+                  <h2 class="h4 fw-bold mb-1"><i class="bi bi-chat-square-heart me-2 text-primary"></i>Opiniones de clientes</h2>
+                  <p class="text-muted mb-0 fw-medium">{{ totalResenas }} reseñas publicadas</p>
                 </div>
-                <div class="d-flex align-items-center gap-3">
-                  <h3 class="display-6 fw-bold mb-0">{{ ratingValue }}</h3>
+                <div class="d-flex align-items-center gap-3 bg-light p-3 rounded-4 shadow-inner">
+                  <h3 class="display-5 fw-extrabold text-primary mb-0">{{ ratingValue }}</h3>
                   <div>
-                    <div class="text-warning lh-1">
+                    <div class="text-warning lh-1 fs-5">
                       <template v-for="index in buildStarIcons(comercio.puntuacionMedia).fullStars" :key="`full-${index}`">
                         <i class="bi bi-star-fill"></i>
                       </template>
@@ -333,28 +284,28 @@ watch(() => route.params.id, loadComercio, { immediate: true })
                         <i class="bi bi-star"></i>
                       </template>
                     </div>
-                    <p class="text-muted small mb-0">Valoración media</p>
+                    <p class="text-muted small fw-semibold mb-0 mt-1">Valoración media</p>
                   </div>
                 </div>
               </div>
               
-              <div class="mb-4">
+              <div class="bg-light p-3 rounded-4 mb-4">
                 <div v-for="item in ratingDistribution" :key="item.valoracion" class="d-flex align-items-center gap-2 mb-2">
-                  <span class="small text-muted rating-label">{{ item.valoracion }}</span>
+                  <span class="small text-secondary fw-bold rating-label">{{ item.valoracion }} ★</span>
                   <div class="rating-bar flex-grow-1">
                     <div class="rating-bar-fill" :style="{ width: `${item.percentage}%` }"></div>
                   </div>
-                  <span class="small text-muted rating-percentage">{{ item.percentage }}%</span>
+                  <span class="small text-muted fw-semibold rating-percentage">{{ item.percentage }}%</span>
                 </div>
               </div>
 
-              <div v-if="isLoggedIn" class="card p-3 mb-4 border-0 bg-light rounded-4 shadow-sm">
+              <div v-if="isLoggedIn" class="card p-4 mb-4 border-0 bg-form-light rounded-4 shadow-sm">
                 <h4 class="h6 fw-bold text-dark mb-3"><i class="bi bi-pencil-square me-2 text-primary"></i>Dejar una valoración</h4>
                 <form @submit.prevent="enviarResena">
                   
                   <div class="mb-3">
-                    <label class="form-label small fw-semibold text-secondary d-block mb-1">Tu puntuación:</label>
-                    <div class="stars-selector text-warning fs-4">
+                    <label class="form-label small fw-bold text-secondary d-block mb-1">Tu puntuación:</label>
+                    <div class="stars-selector text-warning fs-3">
                       <i v-for="i in 5" :key="i"
                          :class="i <= nuevaResena.valoracion ? 'bi bi-star-fill me-1' : 'bi bi-star me-1'"
                          @click="nuevaResena.valoracion = i"
@@ -363,89 +314,113 @@ watch(() => route.params.id, loadComercio, { immediate: true })
                   </div>
 
                   <div class="mb-3">
-                    <label class="form-label small fw-semibold text-secondary">Título breve</label>
-                    <input v-model="nuevaResena.titulo" type="text" class="form-control form-control-sm rounded-3" 
+                    <label class="form-label small fw-bold text-secondary">Título breve</label>
+                    <input v-model="nuevaResena.titulo" type="text" class="form-control rounded-3 custom-input" 
                            placeholder="Ej: ¡Excelente servicio!, Muy recomendado..." required>
                   </div>
 
                   <div class="mb-3">
-                    <label class="form-label small fw-semibold text-secondary">Tu comentario</label>
-                    <textarea v-model="nuevaResena.comentario" class="form-control form-control-sm rounded-3" rows="3" 
+                    <label class="form-label small fw-bold text-secondary">Tu comentario</label>
+                    <textarea v-model="nuevaResena.comentario" class="form-control rounded-3 custom-input" rows="3" 
                               placeholder="Cuéntanos tu experiencia con este comercio..." required></textarea>
                   </div>
 
-                  <button type="submit" class="btn btn-primary btn-sm px-4 fw-bold rounded-3" :disabled="enviando">
+                  <button type="submit" class="btn btn-primary px-4 fw-bold rounded-3 shadow-sm btn-submit-review" :disabled="enviando">
                     <span v-if="enviando"><span class="spinner-border spinner-border-sm me-2"></span>Enviando...</span>
-                    <span v-else><i class="bi bi-send me-1"></i> Publicar Reseña</span>
+                    <span v-else><i class="bi bi-send-fill me-2"></i> Publicar Reseña</span>
                   </button>
                 </form>
               </div>
 
-              <div v-else class="alert alert-light text-center border rounded-4 p-4 mb-4">
+              <div v-else class="alert alert-light border-dashed text-center rounded-4 p-4 mb-4">
                 <i class="bi bi-lock-fill text-muted fs-3 d-block mb-2"></i>
-                <h5 class="h6 fw-bold text-dark">¿Quieres dejar una opinión?</h5>
+                <span class="h6 fw-bold text-dark mb-1 d-block">¿Quieres dejar una opinión?</span>
                 <p class="text-muted small mb-3">Debes iniciar sesión en tu cuenta para poder valorar este comercio.</p>
-                <RouterLink to="/login" class="btn btn-dark btn-sm px-4 fw-bold rounded-pill">
+                <RouterLink to="/login" class="btn btn-dark btn-sm px-4 fw-bold rounded-pill shadow-sm">
                   <i class="bi bi-box-arrow-in-right me-1"></i> Iniciar Sesión
                 </RouterLink>
               </div>
 
-              <div class="d-grid gap-3" id="resenasList">
-                <div v-for="resena in resenas" :key="resena.id" class="border rounded-4 p-3 bg-white">
+              <div class="resenas-scroll-container pr-2" id="resenasList">
+                <div v-for="resena in resenas" :key="resena.id" class="resena-card-custom p-3 mb-3 bg-white border shadow-xs rounded-4">
                   <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
-                    <div>
-                      <h3 class="h6 fw-bold mb-1">{{ resena.titulo }}</h3>
-                      <p class="text-muted small mb-0">{{ resena.autorNombre }}<span v-if="resena.autorEmail"> · {{ resena.autorEmail }}</span></p>
+                    <div class="d-flex align-items-center gap-2.5">
+                      <div class="avatar-review-placeholder d-flex align-items-center justify-content-center text-white fw-bold rounded-circle">
+                        {{ getInitials(resena.autorNombre) }}
+                      </div>
+                      <div>
+                        <h3 class="h6 fw-bold mb-0 text-dark-emphasis">{{ resena.titulo }}</h3>
+                        <p class="text-muted small mb-0 fw-medium">
+                          {{ resena.autorNombre }} <span v-if="resena.autorEmail" class="opacity-75">· {{ resena.autorEmail }}</span>
+                        </p>
+                      </div>
                     </div>
-                    <span class="badge text-bg-primary">{{ resena.valoracion }}/5</span>
+                    <span class="badge badge-rating-pill px-2.5 py-1.5 fw-bold fs-7 rounded-3">
+                      {{ resena.valoracion }} / 5 <i class="bi bi-star-fill text-warning ms-1"></i>
+                    </span>
                   </div>
-                  <p class="mb-2 text-body-secondary">{{ resena.comentario || 'Sin comentario.' }}</p>
-                  <small class="text-muted">{{ formatDate(resena.fecha) }}</small>
+                  <p class="mb-2 text-secondary-emphasis fs-6 leading-relaxed ps-1">{{ resena.comentario || 'Sin comentario.' }}</p>
+                  <div class="d-flex justify-content-end">
+                    <small class="text-muted fs-7 fw-medium"><i class="bi bi-clock me-1"></i>{{ formatDate(resena.fecha) }}</small>
+                  </div>
                 </div>
-                <div v-if="!resenas.length" class="text-muted">Aún no hay reseñas para este comercio.</div>
+                <div v-if="!resenas.length" class="text-muted p-4 text-center border rounded-4 bg-light">
+                  <i class="bi bi-chat-left-text d-block fs-3 mb-2 text-neutral"></i>
+                  Aún no hay reseñas para este comercio. ¡Sé el primero en opinar!
+                </div>
               </div>
+
             </section>
           </div>
 
           <div class="col-12 col-lg-4">
-            <div class="sticky-top detail-sidebar" style="top: 20px;">
-              <div class="card border-0 shadow-sm rounded-4 p-4 mb-3">
-                <div class="d-flex align-items-center gap-3 mb-3">
-                  <img :src="logoImage" class="rounded-4 detail-logo" :alt="comercio.nombreComercio" />
+            <div class="sticky-top detail-sidebar" style="top: 24px;">
+              
+              <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 card-sidebar-custom">
+                <div class="d-flex align-items-center gap-3 mb-4 border-bottom pb-3">
+                  <img :src="logoImage" class="rounded-4 detail-logo border p-1 bg-white shadow-xs" :alt="comercio.nombreComercio" />
                   <div>
-                    <p class="text-muted small mb-1">{{ comercio.categoria }}</p>
-                    <h2 class="h5 fw-bold mb-0">{{ comercio.nombreComercio }}</h2>
+                    <span class="text-primary small fw-bold text-uppercase tracking-wide">{{ comercio.categoria }}</span>
+                    <h2 class="h5 fw-extrabold mb-0 text-dark-emphasis mt-0.5">{{ comercio.nombreComercio }}</h2>
                   </div>
                 </div>
-                <button class="btn btn-primary w-100 rounded-3 mb-3">Contactar ahora</button>
-                <div class="mb-3">
-                  <p class="small text-uppercase text-muted fw-semibold mb-2">Horario</p>
-                  <p class="mb-1 small">{{ comercio.horario || 'Horario no disponible' }}</p>
-                  <p class="mb-0 small">{{ comercio.diasApertura || 'Días de apertura no disponibles' }}</p>
+
+                <RouterLink to="/contacto" class="btn btn-contact-gradient w-100 rounded-3 mb-4 py-2.5 text-center fw-bold text-white shadow-sm">
+                  <i class="bi bi-envelope-paper-fill me-2"></i>Contactar con Dtubarrio
+                </RouterLink>
+
+                <div class="mb-4">
+                  <p class="small text-uppercase text-muted fw-bold tracking-wider mb-2.5"><i class="bi bi-clock-history me-1.5 text-primary"></i>Horario</p>
+                  <div class="bg-light p-3 rounded-3 border-start border-primary border-3">
+                    <p class="mb-1 small fw-semibold text-dark">{{ comercio.horario || 'Horario no disponible' }}</p>
+                    <p class="mb-0 small text-muted">{{ comercio.diasApertura || 'Días de apertura no disponibles' }}</p>
+                  </div>
                 </div>
+
                 <div>
-                  <p class="small text-uppercase text-muted fw-semibold mb-2">Estado</p>
-                  <div class="d-flex align-items-center gap-2">
-                    <span class="badge rounded-pill bg-success">Abierto</span>
-                    <span class="small text-muted">Información orientativa</span>
+                  <p class="small text-uppercase text-muted fw-bold tracking-wider mb-2"><i class="bi bi-info-circle me-1.5 text-primary"></i>Estado</p>
+                  <div class="d-flex align-items-center gap-2 bg-success-light p-2.5 rounded-3">
+                    <span class="badge rounded-pill bg-success px-2.5 py-1.5 fw-bold">Abierto</span>
+                    <span class="small text-success-emphasis fw-medium">Información orientativa</span>
                   </div>
                 </div>
               </div>
               
-              <div class="card shadow-sm p-3 mt-3" style="border-radius: 12px; background-color: #ffffff;">
-                <h4 class="h6 fw-bold text-dark mb-3">📍 Ubicación</h4>
-                <p class="text-muted small mb-2" style="line-height: 1.4;">
-                  <strong>Dirección/Indicaciones:</strong><br>
+              <div class="card border-0 shadow-sm p-4 card-sidebar-custom" style="border-radius: 16px;">
+                <h4 class="h6 fw-bold text-dark mb-3"><i class="bi bi-geo-alt-fill me-2 text-danger"></i>📍 Ubicación</h4>
+                <p class="text-secondary small mb-3" style="line-height: 1.5;">
+                  <strong class="text-dark">Dirección/Indicaciones:</strong><br>
                   {{ comercio.ubicacion || 'Dirección no especificada por el comercio.' }}
                 </p>
-                <div v-if="comercio.ubicacion" class="mt-2">
+                <div v-if="comercio.ubicacion">
                   <a :href="'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(comercio.ubicacion)" 
                     target="_blank" 
-                    class="btn btn-outline-primary btn-sm w-100 fw-bold d-flex align-items-center justify-content-center gap-1">
-                    🌐 Ver en Google Maps
+                    class="btn btn-outline-primary w-100 fw-bold d-flex align-items-center justify-content-center gap-2 btn-maps-custom py-2">
+                    <i class="bi bi-map-fill"></i> Ver en Google Maps
                   </a>
                 </div>
               </div>
+
             </div>
           </div>
         </div>
@@ -455,25 +430,148 @@ watch(() => route.params.id, loadComercio, { immediate: true })
 </template>
 
 <style scoped>
+/* Estilos del nuevo botón flotante de favoritos */
+.btn-favorito-floating {
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  color: #64748b;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-favorito-floating:hover {
+  transform: scale(1.1);
+  background-color: #ffffff;
+  color: #dc3545;
+}
+.btn-favorito-floating.activo {
+  background-color: #ffffff;
+  color: #dc3545;
+  border-color: rgba(220, 53, 69, 0.2);
+}
+
 .detail-page {
   background:
-    radial-gradient(circle at top left, rgba(58, 134, 255, 0.08), transparent 30%),
-    linear-gradient(180deg, #fbfdff 0%, #ffffff 55%);
+    radial-gradient(circle at top left, rgba(58, 134, 255, 0.05), transparent 35%),
+    radial-gradient(circle at bottom right, rgba(103, 164, 255, 0.04), transparent 40%),
+    linear-gradient(180deg, #f8fafd 0%, #ffffff 100%);
+  min-height: 100vh;
+}
+
+.card-custom-layout, .card-sidebar-custom {
+  background-color: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.7) !important;
 }
 
 .detail-hero-image {
-  height: 360px;
+  height: 380px;
   object-fit: cover;
 }
 
 .detail-hero-overlay {
-  background: linear-gradient(180deg, transparent 0%, rgba(5, 25, 40, 0.82) 100%);
+  background: linear-gradient(180deg, transparent 10%, rgba(15, 23, 42, 0.85) 100%);
 }
 
-.product-card-image {
-  height: 170px;
-  width: 100%;
-  object-fit: cover;
+.glass-content {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.text-shadow-sm {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.fw-extrabold {
+  font-weight: 800;
+}
+
+.btn-action-back {
+  background-color: #ffffff;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+.btn-action-back:hover {
+  background-color: #f1f5f9;
+  color: #1e293b;
+  transform: translateY(-1px);
+}
+
+.btn-contact-gradient {
+  background: linear-gradient(135deg, #3a86ff 0%, #2563eb 100%);
+  border: none;
+  transition: all 0.2s ease;
+}
+.btn-contact-gradient:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.bg-success-gradient {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.resenas-scroll-container {
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.resenas-scroll-container::-webkit-scrollbar {
+  width: 6px;
+}
+.resenas-scroll-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+.resenas-scroll-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+.resenas-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.resena-card-custom {
+  border: 1px solid #e2e8f0 !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.resena-card-custom:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03) !important;
+  border-color: #cbd5e1 !important;
+}
+
+.avatar-review-placeholder {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.badge-rating-pill {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+.bg-form-light {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0 !important;
+}
+.custom-input {
+  border: 1px solid #cbd5e1;
+  padding: 0.6rem 0.75rem;
+  transition: all 0.2s ease;
+}
+.custom-input:focus {
+  border-color: #3a86ff;
+  box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.15);
 }
 
 .detail-logo {
@@ -482,39 +580,48 @@ watch(() => route.params.id, loadComercio, { immediate: true })
   object-fit: cover;
 }
 
+.bg-primary-light {
+  background-color: rgba(58, 134, 255, 0.1);
+}
+
+.bg-success-light {
+  background-color: rgba(16, 185, 129, 0.08);
+}
+
 .rating-bar {
-  height: 10px;
+  height: 8px;
   border-radius: 999px;
-  background: #e9ecef;
+  background: #e2e8f0;
   overflow: hidden;
 }
 
 .rating-bar-fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #3a86ff 0%, #67a4ff 100%);
+  background: linear-gradient(90deg, #3a86ff 0%, #60a5fa 100%);
 }
 
-.rating-label,
+.rating-label {
+  min-width: 32px;
+}
 .rating-percentage {
-  min-width: 24px;
+  min-width: 36px;
+  text-align: right;
+}
+
+.stars-selector i {
+  transition: transform 0.1s ease;
+  display: inline-block;
+}
+.stars-selector i:hover {
+  transform: scale(1.2);
 }
 
 .detail-sidebar {
   z-index: 10;
 }
 
-.detail-hero-overlay,
-.detail-hero-overlay h1,
-.detail-hero-overlay p,
-.detail-hero-overlay .text-uppercase {
-  color: #ffffff !important;
-}
-
-.stars-selector i {
-  transition: transform 0.1s ease;
-}
-.stars-selector i:hover {
-  transform: scale(1.2);
+.border-dashed {
+  border: 2px dashed #e2e8f0 !important;
 }
 </style>

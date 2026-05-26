@@ -9,6 +9,7 @@ import AdminView from '../views/AdminView.vue'
 import AdminPendingCommercesView from '../views/AdminPendingCommercesView.vue'
 import UsuarioDashboardView from '../views/UsuarioDashboardView.vue'
 import ComercioDashboardView from '../views/ComercioDashboardView.vue'
+import FavoritosView from '../views/FavoritosView.vue' // 🌟 IMPORTACIÓN AÑADIDA
 import { getAuth } from '../services/authService'
 
 function routeForAuth(auth) {
@@ -48,6 +49,11 @@ const router = createRouter({
       path: '/comercios/:id',
       name: 'comercio-detalle',
       component: ComercioDetailView,
+    },
+    {
+      path: '/favoritos', // 🌟 RUTA DE FAVORITOS AÑADIDA
+      name: 'favoritos',
+      component: FavoritosView,
     },
     {
       path: '/about',

@@ -1,11 +1,11 @@
+// CORREGIDO: Valores simplificados para filtrar por "X estrellas o más" de forma acumulativa
 export const valoracionOpciones = [
   { value: '', label: 'Todas las valoraciones' },
-  { value: '0', label: '0.0 ', min: 0.0, max: 0.9 },
-  { value: '1', label: '1.0 ', min: 1.0, max: 1.9 },
-  { value: '2', label: '2.0 ', min: 2.0, max: 2.9 },
-  { value: '3', label: '3.0 ', min: 3.0, max: 3.9 },
-  { value: '4', label: '4.0 ', min: 4.0, max: 4.9 },
-  { value: '5', label: '5.0 ', min: 5.0, max: 5.0 },
+  { value: '1', label: '1.0 o más estrellas' },
+  { value: '2', label: '2.0 o más estrellas' },
+  { value: '3', label: '3.0 o más estrellas' },
+  { value: '4', label: '4.0 o más estrellas' },
+  { value: '5', label: '5.0 estrellas' },
 ]
 
 export const horarioOpciones = [
