@@ -33,6 +33,12 @@ export async function rechazarComercio(comercioId, motivoRechazo) {
   return response.data
 }
 
+// ✅ NUEVA FUNCIÓN: Envía el DELETE al backend usando tu configuración de Axios
+export async function eliminarComercio(comercioId) {
+  const response = await api.delete(`${baseUrl}/api/admin/comercios/${comercioId}`)
+  return response.data
+}
+
 export async function aprobarColaboracion(solicitudId) {
   const response = await api.post(`${baseUrl}/api/admin/contacto/colaboraciones/aprobar`, {
     solicitudId,
@@ -46,4 +52,10 @@ export async function rechazarColaboracion(solicitudId, motivoRechazo) {
     motivoRechazo,
   })
   return response.data
+}
+
+export async function fetchAdminComerciosActivos() {
+
+  const response = await api.get(`${baseUrl}/api/comercios`) 
+  return Array.isArray(response.data) ? response.data : []
 }

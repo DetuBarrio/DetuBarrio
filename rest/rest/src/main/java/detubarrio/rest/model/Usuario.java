@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+// ✅ NUEVOS IMPORTS PARA EL BORRADO EN CASCADA
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +42,7 @@ public class Usuario {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_comercio")
+    @OnDelete(action = OnDeleteAction.CASCADE) // ✅ ESTO ES LO QUE FALTA: Configura el ON DELETE CASCADE real en la BD
     private Comercio comercio;
 
     @ManyToMany(fetch = FetchType.LAZY)

@@ -47,8 +47,7 @@ public class AdminService {
 
         comercio.setEstado(EstadoComercio.APROBADO);
         comercio.setMotivoRechazo(null);
-        // Aprobación de cuenta NO otorga gestión ni lo hace visible públicamente
-        comercio.setGestionAutorizada(false);
+        comercio.setGestionAutorizada(true); 
         comercio.setMotivoBloqueoGestion(null);
         comercio = comercioRepository.save(comercio);
 
@@ -66,13 +65,26 @@ public class AdminService {
 
         comercio.setEstado(EstadoComercio.RECHAZADO);
         comercio.setMotivoRechazo(request.motivoRechazo());
-        // Al rechazar asegurar que no pueda gestionarse ni aparecer públicamente
         comercio.setGestionAutorizada(false);
         comercio.setMotivoBloqueoGestion(request.motivoRechazo());
         comercio = comercioRepository.save(comercio);
 
         return toComercioPendienteResponse(comercio);
     }
+
+@Transactional
+public void eliminarComercio(Long comercioId) {
+    // 1. Buscamos todos los usuarios que pertenecen a este comercio específico
+    List<Usuario> usuariosAsociados = usuarioRepository.findByComercioId(comercioId);
+    
+    // 2. Los eliminamos primero para romper la restricción de clave foránea (FK)
+    if (!usuariosAsociados.isEmpty()) {
+        usuarioRepository.deleteAll(usuariosAsociados);
+    }
+    
+    // 3. Ahora que el comercio está libre de dependencias, lo borramos de la base de datos
+    comercioRepository.deleteById(comercioId);
+}
 
     @Transactional(readOnly = true)
     public List<SolicitudColaboracionResponse> listarSolicitudesColaboracion() {
@@ -136,28 +148,6 @@ public class AdminService {
     private void actualizarGestionDelComercio(Comercio comercio, boolean autorizada, String motivoBloqueo) {
         comercio.setGestionAutorizada(autorizada);
         comercio.setMotivoBloqueoGestion(motivoBloqueo);
-        comercioRepository.save(comercio);
-    }
-
-    private void activarGestionDelComercio(Usuario usuario) {
-        Comercio comercio = usuario.getComercio();
-        if (comercio == null) {
-            return;
-        }
-
-        comercio.setGestionAutorizada(true);
-        comercio.setMotivoBloqueoGestion(null);
-        comercioRepository.save(comercio);
-    }
-
-    private void bloquearGestionDelComercio(Usuario usuario) {
-        Comercio comercio = usuario.getComercio();
-        if (comercio == null) {
-            return;
-        }
-
-        comercio.setGestionAutorizada(false);
-        comercio.setMotivoBloqueoGestion("Solicitud de colaboración rechazada por el administrador");
         comercioRepository.save(comercio);
     }
 
