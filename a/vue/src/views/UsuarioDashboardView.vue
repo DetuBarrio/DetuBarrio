@@ -91,13 +91,6 @@ onMounted(async () => {
           <i class="bi bi-calendar-check me-2"></i> Mis reservas
         </button>
         <button 
-          :class="{ 'active': seccionActiva === 'pedidos' }" 
-          @click="seccionActiva = 'pedidos'"
-          class="nav-link-btn"
-        >
-          <i class="bi bi-bag me-2"></i> Mis pedidos
-        </button>
-        <button 
           :class="{ 'active': seccionActiva === 'perfil' }" 
           @click="seccionActiva = 'perfil'"
           class="nav-link-btn"

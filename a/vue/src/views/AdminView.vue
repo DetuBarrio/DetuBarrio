@@ -2,7 +2,8 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { clearAuth, getAuth } from '../services/authService'
-import { fetchAdminColaboraciones, fetchAdminMensajes, fetchAdminSolicitudesComercios, aprobarComercio, rechazarComercio, aprobarColaboracion, rechazarColaboracion } from '../services/adminService'
+// ✅ Importamos la nueva función fetchAdminComerciosActivos
+import { fetchAdminColaboraciones, fetchAdminMensajes, fetchAdminSolicitudesComercios, fetchAdminComerciosActivos, aprobarComercio, rechazarComercio, aprobarColaboracion, rechazarColaboracion, eliminarComercio } from '../services/adminService'
 
 const auth = ref(getAuth())
 const loading = ref(false)
@@ -10,6 +11,7 @@ const errorMessage = ref('')
 const mensajes = ref([])
 const colaboraciones = ref([])
 const solicitudesComercios = ref([])
+const comerciosActivos = ref([]) // ✅ Estado para los comercios ya publicados
 const activeTab = ref('mensajes')
 const processingId = ref(null)
 const processingColaboracionId = ref(null)
@@ -34,15 +36,18 @@ async function loadData() {
   errorMessage.value = ''
 
   try {
-    const [mensajesResponse, colaboracionesResponse, solicitudesResponse] = await Promise.all([
+    // ✅ Ahora también cargamos los comercios activos en el Promise.all
+    const [mensajesResponse, colaboracionesResponse, solicitudesResponse, comerciosResponse] = await Promise.all([
       fetchAdminMensajes(),
       fetchAdminColaboraciones(),
       fetchAdminSolicitudesComercios(),
+      fetchAdminComerciosActivos()
     ])
 
     mensajes.value = mensajesResponse
     colaboraciones.value = colaboracionesResponse
     solicitudesComercios.value = solicitudesResponse
+    comerciosActivos.value = comerciosResponse
   } catch (error) {
     errorMessage.value = error?.response?.data?.details?.[0] || error?.message || 'No se pudo cargar la información de administración.'
   } finally {
@@ -56,6 +61,7 @@ function handleLogout() {
   mensajes.value = []
   colaboraciones.value = []
   solicitudesComercios.value = []
+  comerciosActivos.value = []
 }
 
 async function handleAprobarComercio(comercioId) {
@@ -80,6 +86,23 @@ async function handleRechazarComercio(comercioId) {
     await loadData()
   } catch (error) {
     errorMessage.value = error?.response?.data?.details?.[0] || 'No se pudo rechazar el comercio.'
+  } finally {
+    processingId.value = null
+  }
+}
+
+// ✅ Esta función ahora sirve tanto para solicitudes como para comercios activos
+async function handleEliminarComercio(comercioId, nombreComercio = 'este comercio') {
+  if (!confirm(`⚠️ ¿ESTÁS COMPLETAMENTE SEGURO?\n\nVas a eliminar "${nombreComercio}" de forma PERMANENTE.\nEsto borrará el negocio del directorio y a TODOS los usuarios vinculados a él.`)) {
+    return
+  }
+
+  processingId.value = comercioId
+  try {
+    await eliminarComercio(comercioId)
+    await loadData() // Recarga todo el panel para actualizar los contadores
+  } catch (error) {
+    errorMessage.value = error?.response?.data?.details?.[0] || 'No se pudo eliminar el comercio en cascada.'
   } finally {
     processingId.value = null
   }
@@ -184,8 +207,16 @@ onUnmounted(() => {
           <div class="col-md-3">
             <div class="card border-0 shadow-sm rounded-4 h-100">
               <div class="card-body p-4">
-                <p class="text-muted mb-1">Solicitudes de comercio</p>
+                <p class="text-muted mb-1">Solicitudes pendientes</p>
                 <h2 class="display-6 fw-bold mb-0">{{ solicitudesComercios.length }}</h2>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+              <div class="card-body p-4">
+                <p class="text-muted mb-1">Comercios Activos 🏢</p>
+                <h2 class="display-6 fw-bold text-success mb-0">{{ comerciosActivos.length }}</h2>
               </div>
             </div>
           </div>
@@ -194,14 +225,6 @@ onUnmounted(() => {
               <div class="card-body p-4">
                 <p class="text-muted mb-1">Colaboraciones</p>
                 <h2 class="display-6 fw-bold mb-0">{{ colaboraciones.length }}</h2>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <div class="card border-0 shadow-sm rounded-4 h-100">
-              <div class="card-body p-4">
-                <p class="text-muted mb-1">Estado</p>
-                <h2 class="h3 fw-bold mb-0">Operativo</h2>
               </div>
             </div>
           </div>
@@ -221,7 +244,12 @@ onUnmounted(() => {
               </li>
               <li class="nav-item">
                 <button class="nav-link" :class="{ active: activeTab === 'solicitudes' }" @click="activeTab = 'solicitudes'">
-                  Solicitudes de Comercios
+                  Solicitudes Pendientes
+                </button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link" :class="{ active: activeTab === 'activos' }" @click="activeTab = 'activos'">
+                  Comercios Activos
                 </button>
               </li>
               <li class="nav-item">
@@ -301,11 +329,55 @@ onUnmounted(() => {
                             {{ processingId === solicitud.id ? 'Procesando...' : 'Aprobar' }}
                           </button>
                           <button
-                            class="btn btn-sm btn-danger"
+                            class="btn btn-sm btn-warning text-white me-2"
                             @click="handleRechazarComercio(solicitud.id)"
                             :disabled="processingId === solicitud.id"
                           >
-                            {{ processingId === solicitud.id ? 'Procesando...' : 'Rechazar' }}
+                            Rechazar
+                          </button>
+                          <button
+                            class="btn btn-sm btn-danger"
+                            @click="handleEliminarComercio(solicitud.id, solicitud.nombreComercio)"
+                            :disabled="processingId === solicitud.id"
+                          >
+                            Eliminar Firme
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div v-else-if="activeTab === 'activos'">
+                <div v-if="comerciosActivos.length === 0" class="alert alert-light border mb-0">
+                  No hay comercios activos publicados en el directorio.
+                </div>
+                <div v-else class="table-responsive">
+                  <table class="table align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Nombre del Comercio</th>
+                        <th>Categoría</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="comercio in comerciosActivos" :key="comercio.id">
+                        <td><code>#{{ comercio.id }}</code></td>
+                        <td class="fw-bold text-primary">{{ comercio.nombreComercio }}</td>
+                        <td><span class="badge text-bg-info text-white">{{ comercio.categoria || 'General' }}</span></td>
+                        <td><span class="badge text-bg-success">Publicado / Activo</span></td>
+                        <td>
+                          <button
+                            class="btn btn-sm btn-danger d-inline-flex align-items-center"
+                            @click="handleEliminarComercio(comercio.id, comercio.nombreComercio)"
+                            :disabled="processingId === comercio.id"
+                          >
+                            <span v-if="processingId === comercio.id" class="spinner-border spinner-border-sm me-1"></span>
+                            {{ processingId === comercio.id ? 'Borrando...' : 'Eliminar Firme' }}
                           </button>
                         </td>
                       </tr>

@@ -225,7 +225,7 @@ onMounted(() => {
             <div class="mb-3">
               <label class="form-label fw-bold">¿Qué tipo de cuenta necesitas?</label>
               <select v-model="registerForm.rol" class="form-select form-select-lg border-primary" required>
-                <option value="USUARIO">Quiero comprar / reservar (Usuario)</option>
+                <option value="USUARIO">Quiero reservar (Usuario)</option>
                 <option value="COMERCIO">Tengo un negocio (Comercio)</option>
               </select>
             </div>
