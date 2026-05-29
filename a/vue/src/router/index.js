@@ -45,31 +45,49 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
+      meta: {
+        breadcrumb: 'Inicio',
+      },
     },
     {
       path: '/comercios',
       name: 'comercios',
       component: ComercioView,
+      meta: {
+        breadcrumb: 'Comercios',
+      },
     },
     {
       path: '/comercios/:id',
       name: 'comercio-detalle',
       component: ComercioDetailView,
+      meta: {
+        breadcrumb: 'comercio-detalle',
+      },
     },
     {
       path: '/favoritos', // 🌟 RUTA DE FAVORITOS AÑADIDA
       name: 'favoritos',
       component: FavoritosView,
+      meta: {
+        breadcrumb: 'Favoritos',
+      },
     },
     {
       path: '/about',
       name: 'about',
       component: AboutView,
+      meta: {
+        breadcrumb: '¿Qué es?',
+      },
     },
     {
       path: '/contacto',
       name: 'contacto',
       component: ContactoView,
+      meta: {
+        breadcrumb: 'Contacto',
+      },
     },
     {
       path: '/login',
@@ -77,6 +95,7 @@ const router = createRouter({
       component: LoginView,
       meta: {
         guestOnly: true,
+        breadcrumb: 'Iniciar sesión',
       },
     },
     {
@@ -85,6 +104,7 @@ const router = createRouter({
       component: ForgotPasswordView,
       meta: {
         guestOnly: true, // Para que si ya está logueado, lo redirija a su sitio
+        breadcrumb: 'Recuperar acceso',
       },
     },
     {
@@ -93,6 +113,7 @@ const router = createRouter({
       component: ResetPasswordView,
       meta: {
         guestOnly: true, // Solo accesible para usuarios sin sesión activa
+        breadcrumb: 'Nueva contraseña',
       },
     },
     {
@@ -105,27 +126,40 @@ const router = createRouter({
       component: UsuarioDashboardLayout,
       meta: {
         requiredRole: 'USUARIO',
+        breadcrumb: 'Mi cuenta',
       },
       children: [
         {
           path: '',
           name: 'dashboard-usuario',
           component: UsuarioDashboardHome,
+          meta: {
+            breadcrumb: 'Panel general',
+          },
         },
         {
           path: 'reservas',
           name: 'dashboard-usuario-reservas',
           component: () => import('../views/ReservasUsuario.vue'),
+          meta: {
+            breadcrumb: 'Mis reservas',
+          },
         },
         {
           path: 'perfil',
           name: 'dashboard-usuario-perfil',
           component: UsuarioPerfilView,
+          meta: {
+            breadcrumb: 'Mi perfil',
+          },
         },
         {
           path: 'ajustes',
           name: 'dashboard-usuario-ajustes',
           component: UsuarioAjustesView,
+          meta: {
+            breadcrumb: 'Ajustes',
+          },
         },
       ],
     },
@@ -134,27 +168,40 @@ const router = createRouter({
       component: ComercioDashboardLayout,
       meta: {
         requiredRole: 'COMERCIO',
+        breadcrumb: 'Mi comercio',
       },
       children: [
         {
           path: '',
           name: 'dashboard-comercio',
           component: ComercioDashboardHome,
+          meta: {
+            breadcrumb: 'Panel general',
+          },
         },
         {
           path: 'reservas',
           name: 'dashboard-comercio-reservas',
           component: () => import('../views/MisReservasView.vue'),
+          meta: {
+            breadcrumb: 'Reservas',
+          },
         },
         {
           path: 'disponibilidad',
           name: 'dashboard-comercio-disponibilidad',
           component: () => import('../views/DisponibilidadView.vue'),
+          meta: {
+            breadcrumb: 'Horarios',
+          },
         },
         {
           path: 'configuracion',
           name: 'dashboard-comercio-configuracion',
           component: () => import('../views/ConfiguracionView.vue'),
+          meta: {
+            breadcrumb: 'Configuración',
+          },
         },
       ],
     },
@@ -176,6 +223,7 @@ const router = createRouter({
       component: AdminView,
       meta: {
         requiresAdmin: true,
+        breadcrumb: 'Admin',
       },
     },
     {
@@ -184,6 +232,7 @@ const router = createRouter({
       component: AdminPendingCommercesView,
       meta: {
         requiresAdmin: true,
+        breadcrumb: 'Solicitudes',
       },
     },
   ],
