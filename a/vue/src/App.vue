@@ -1,11 +1,13 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { RouterView, RouterLink, useRouter } from 'vue-router'
+import { RouterView, RouterLink, useRoute, useRouter } from 'vue-router'
 import HomeView from './views/HomeView.vue'
+import AppBreadcrumbs from './components/AppBreadcrumbs.vue'
 import logoOg from './assets/images/logo_og.png'
 import { clearAuth, getAuth } from './services/authService'
 
 const router = useRouter()
+const route = useRoute()
 const auth = ref(getAuth())
 
 function syncAuth() {
@@ -16,6 +18,7 @@ const isAdmin = computed(() => auth.value?.rol === 'ADMIN')
 const isLoggedIn = computed(() => Boolean(auth.value?.token))
 const userInitial = computed(() => (auth.value?.nombre?.trim()?.charAt(0) || 'U').toUpperCase())
 const accountRoute = computed(() => '/mi-cuenta')
+const showGlobalBreadcrumbs = computed(() => !route.path.startsWith('/dashboard'))
 
 onMounted(() => {
   window.addEventListener('detubarrio-auth-changed', syncAuth)
@@ -114,6 +117,8 @@ function handleLogout() {
         </div>
       </div>
     </nav>
+
+  <AppBreadcrumbs v-if="showGlobalBreadcrumbs" />
 
   <RouterView v-slot="{ Component }">
     <component :is="Component || HomeView" />

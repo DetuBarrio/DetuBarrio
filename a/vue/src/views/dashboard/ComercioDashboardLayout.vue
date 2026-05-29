@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
+import AppBreadcrumbs from '../../components/AppBreadcrumbs.vue'
 import { clearAuth, getAuth } from '../../services/authService'
 
 const router = useRouter()
@@ -70,6 +71,7 @@ function isActiveRoute(name) {
     </aside>
 
     <section class="dashboard-content">
+      <AppBreadcrumbs />
       <RouterView />
     </section>
   </main>
