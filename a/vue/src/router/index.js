@@ -8,10 +8,14 @@ import LoginView from '../views/LoginView.vue'
 import ForgotPasswordView from '../views/ForgotPasswordView.vue' // 🔐 IMPORTACIÓN AÑADIDA
 import AdminView from '../views/AdminView.vue'
 import AdminPendingCommercesView from '../views/AdminPendingCommercesView.vue'
-import UsuarioDashboardView from '../views/UsuarioDashboardView.vue'
-import ComercioDashboardView from '../views/ComercioDashboardView.vue'
 import ResetPasswordView from '../views/ResetPasswordView.vue'
 import FavoritosView from '../views/FavoritosView.vue' // 🌟 IMPORTACIÓN AÑADIDA
+import UsuarioDashboardLayout from '../views/dashboard/UsuarioDashboardLayout.vue'
+import UsuarioDashboardHome from '../views/dashboard/UsuarioDashboardHome.vue'
+import UsuarioPerfilView from '../views/dashboard/UsuarioPerfilView.vue'
+import UsuarioAjustesView from '../views/dashboard/UsuarioAjustesView.vue'
+import ComercioDashboardLayout from '../views/dashboard/ComercioDashboardLayout.vue'
+import ComercioDashboardHome from '../views/dashboard/ComercioDashboardHome.vue'
 import { getAuth } from '../services/authService'
 
 function routeForAuth(auth) {
@@ -98,34 +102,73 @@ const router = createRouter({
     },
     {
       path: '/dashboard/usuario',
-      name: 'dashboard-usuario',
-      component: UsuarioDashboardView,
+      component: UsuarioDashboardLayout,
       meta: {
         requiredRole: 'USUARIO',
       },
+      children: [
+        {
+          path: '',
+          name: 'dashboard-usuario',
+          component: UsuarioDashboardHome,
+        },
+        {
+          path: 'reservas',
+          name: 'dashboard-usuario-reservas',
+          component: () => import('../views/ReservasUsuario.vue'),
+        },
+        {
+          path: 'perfil',
+          name: 'dashboard-usuario-perfil',
+          component: UsuarioPerfilView,
+        },
+        {
+          path: 'ajustes',
+          name: 'dashboard-usuario-ajustes',
+          component: UsuarioAjustesView,
+        },
+      ],
     },
     {
       path: '/dashboard/comercio',
-      name: 'dashboard-comercio',
-      component: ComercioDashboardView,
+      component: ComercioDashboardLayout,
       meta: {
         requiredRole: 'COMERCIO',
       },
+      children: [
+        {
+          path: '',
+          name: 'dashboard-comercio',
+          component: ComercioDashboardHome,
+        },
+        {
+          path: 'reservas',
+          name: 'dashboard-comercio-reservas',
+          component: () => import('../views/MisReservasView.vue'),
+        },
+        {
+          path: 'disponibilidad',
+          name: 'dashboard-comercio-disponibilidad',
+          component: () => import('../views/DisponibilidadView.vue'),
+        },
+        {
+          path: 'configuracion',
+          name: 'dashboard-comercio-configuracion',
+          component: () => import('../views/ConfiguracionView.vue'),
+        },
+      ],
     },
     {
       path: '/dashboard/disponibilidad',
-      name: 'disponibilidad',
-      component: () => import('../views/DisponibilidadView.vue')
+      redirect: { name: 'dashboard-comercio-disponibilidad' },
     },
     {
       path: '/dashboard/configuracion',
-      name: 'Configuracion',
-      component: () => import('../views/ConfiguracionView.vue')
+      redirect: { name: 'dashboard-comercio-configuracion' },
     },
     {
       path: '/dashboard/comercio/reservas',
-      name: 'mis-reservas',
-      component: () => import('../views/MisReservasView.vue')
+      redirect: { name: 'dashboard-comercio-reservas' },
     },
     {
       path: '/admin',
