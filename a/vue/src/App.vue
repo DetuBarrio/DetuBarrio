@@ -63,19 +63,19 @@ function handleLogout() {
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center">
             <li class="nav-item">
-              <RouterLink class="nav-link text-secondary fw-medium" to="/">Inicio</RouterLink>
+              <RouterLink class="nav-link nav-main-link nav-home-link fw-medium" to="/">Inicio</RouterLink>
             </li>
             <li class="nav-item">
-              <RouterLink class="nav-link text-primary fw-medium" to="/comercios">Comercios</RouterLink>
+              <RouterLink class="nav-link nav-main-link fw-medium" to="/comercios">Comercios</RouterLink>
             </li>
             <li class="nav-item">
-              <RouterLink class="nav-link text-secondary fw-medium" to="/about">¿Qué es?</RouterLink>
+              <RouterLink class="nav-link nav-main-link fw-medium" to="/about">¿Qué es?</RouterLink>
             </li>
             <li class="nav-item">
-              <RouterLink class="nav-link text-secondary fw-medium" to="/contacto">Contacto</RouterLink>
+              <RouterLink class="nav-link nav-main-link fw-medium" to="/contacto">Contacto</RouterLink>
             </li>
             <li v-if="isAdmin" class="nav-item">
-              <RouterLink class="nav-link text-secondary fw-medium" to="/admin">Admin</RouterLink>
+              <RouterLink class="nav-link nav-main-link fw-medium" to="/admin">Admin</RouterLink>
             </li>
             
             <!-- Icono de Favoritos -->
@@ -167,6 +167,25 @@ function handleLogout() {
 </template>
 
 <style scoped>
+.nav-main-link {
+  color: var(--db-secondary);
+  transition: color 0.2s ease;
+}
+
+.nav-main-link:hover,
+.nav-main-link:focus-visible {
+  color: var(--db-primary);
+}
+
+.nav-main-link.router-link-active {
+  color: var(--db-primary);
+}
+
+/* Evita que Inicio aparezca activo en cualquier ruta que empiece por /. */
+.nav-home-link.router-link-active:not(.router-link-exact-active) {
+  color: var(--db-secondary);
+}
+
 .icon-link {
   width: 2.6rem;
   height: 2.6rem;
