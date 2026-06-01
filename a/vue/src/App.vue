@@ -35,13 +35,15 @@ function handleLogout() {
 </script>
 
 <template>
+  <a class="skip-link" href="#contenido-principal">Saltar al contenido principal</a>
+
   <nav class="navbar navbar-expand-lg navbar-custom sticky-top shadow-sm">
       <div class="container-fluid container-xl">
         <!-- Logo DetuBarrio -->
         <RouterLink to="/" class="navbar-brand d-flex align-items-center fw-bold">
           <img
             :src="logoOg"
-            alt="Logo"
+            alt="Logo de DetuBarrio"
             class="me-2 rounded-2"
             width="32"
             height="32"
@@ -120,9 +122,11 @@ function handleLogout() {
 
   <AppBreadcrumbs v-if="showGlobalBreadcrumbs" />
 
-  <RouterView v-slot="{ Component }">
-    <component :is="Component || HomeView" />
-  </RouterView>
+  <div id="contenido-principal" tabindex="-1">
+    <RouterView v-slot="{ Component }">
+      <component :is="Component || HomeView" />
+    </RouterView>
+  </div>
 
   <footer class="footer-custom">
       <div class="container">
@@ -148,18 +152,18 @@ function handleLogout() {
           <div class="col-lg-2 col-6">
             <h6 class="mb-3">Legal</h6>
             <ul class="list-unstyled small d-flex flex-column gap-2">
-              <li><a href="#">Términos y Condiciones</a></li>
-              <li><a href="#">Política de Privacidad</a></li>
-              <li><a href="#">FAQ</a></li>
+              <li><a href="#" aria-label="Ver términos y condiciones">Términos y Condiciones</a></li>
+              <li><a href="#" aria-label="Ver política de privacidad">Política de Privacidad</a></li>
+              <li><a href="#" aria-label="Ver preguntas frecuentes">FAQ</a></li>
             </ul>
           </div>
 
           <div class="col-lg-2 col-12">
             <h6 class="mb-3">Síguenos</h6>
             <ul class="list-unstyled small d-flex flex-column gap-2">
-              <li><a href="#" target="_blank">FB</a></li>
-              <li><a href="https://www.instagram.com/detubarrio_es" target="_blank">Instagram</a></li>
-              <li><a href="https://www.tiktok.com/@detubarrio" target="_blank">TikTok</a></li>
+              <li><a href="#" target="_blank" rel="noopener noreferrer" aria-label="Abrir Facebook de DetuBarrio en una nueva pestaña">FB</a></li>
+              <li><a href="https://www.instagram.com/detubarrio_es" target="_blank" rel="noopener noreferrer" aria-label="Abrir Instagram de DetuBarrio en una nueva pestaña">Instagram</a></li>
+              <li><a href="https://www.tiktok.com/@detubarrio" target="_blank" rel="noopener noreferrer" aria-label="Abrir TikTok de DetuBarrio en una nueva pestaña">TikTok</a></li>
             </ul>
           </div>
         </div>
@@ -184,6 +188,24 @@ function handleLogout() {
 
 .nav-main-link.router-link-active {
   color: var(--db-primary);
+}
+
+.skip-link {
+  position: absolute;
+  top: -3rem;
+  left: 1rem;
+  z-index: 1080;
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--db-primary);
+  font-weight: 700;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
+  transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+  top: 0.75rem;
 }
 
 /* Evita que Inicio aparezca activo en cualquier ruta que empiece por /. */

@@ -195,15 +195,15 @@ onMounted(() => {
         </ul>
 
         <div v-if="activeTab === 'login'">
-          <div v-if="errorMessage" class="alert alert-danger border-0">{{ errorMessage }}</div>
+          <div v-if="errorMessage" class="alert alert-danger border-0" role="alert" aria-live="assertive">{{ errorMessage }}</div>
           <form @submit.prevent="handleLogin">
             <div class="mb-3">
-              <label class="form-label">Email</label>
-              <input v-model="loginForm.email" type="email" class="form-control form-control-lg" placeholder="tu.email@ejemplo.com" required>
+              <label class="form-label" for="login-email">Email</label>
+              <input id="login-email" v-model="loginForm.email" type="email" class="form-control form-control-lg" placeholder="tu.email@ejemplo.com" required>
             </div>
             <div class="mb-2">
-              <label class="form-label">Contraseña</label>
-              <input v-model="loginForm.password" type="password" class="form-control form-control-lg" placeholder="Introduce tu contraseña" required>
+              <label class="form-label" for="login-password">Contraseña</label>
+              <input id="login-password" v-model="loginForm.password" type="password" class="form-control form-control-lg" placeholder="Introduce tu contraseña" required>
             </div>
             
             <div class="text-end mb-4">
@@ -219,43 +219,43 @@ onMounted(() => {
         </div>
 
         <div v-else>
-          <div v-if="registerErrorMessage" class="alert alert-danger border-0">{{ registerErrorMessage }}</div>
-          <div v-if="successMessage" class="alert alert-success border-0">{{ successMessage }}</div>
+          <div v-if="registerErrorMessage" class="alert alert-danger border-0" role="alert" aria-live="assertive">{{ registerErrorMessage }}</div>
+          <div v-if="successMessage" class="alert alert-success border-0" role="status" aria-live="polite">{{ successMessage }}</div>
           <form @submit.prevent="handleRegister">
             <div class="mb-3">
-              <label class="form-label fw-bold">¿Qué tipo de cuenta necesitas?</label>
-              <select v-model="registerForm.rol" class="form-select form-select-lg border-primary" required>
+              <label class="form-label fw-bold" for="register-rol">¿Qué tipo de cuenta necesitas?</label>
+              <select id="register-rol" v-model="registerForm.rol" class="form-select form-select-lg border-primary" required>
                 <option value="USUARIO">Quiero reservar (Usuario)</option>
                 <option value="COMERCIO">Tengo un negocio (Comercio)</option>
               </select>
             </div>
             <div class="mb-3">
-              <label class="form-label">Tu Nombre</label>
-              <input v-model="registerForm.nombre" type="text" class="form-control form-control-lg" placeholder="Tu nombre completo" required>
+              <label class="form-label" for="register-nombre">Tu Nombre</label>
+              <input id="register-nombre" v-model="registerForm.nombre" type="text" class="form-control form-control-lg" placeholder="Tu nombre completo" required>
             </div>
             <div class="mb-3">
-              <label class="form-label">Email</label>
-              <input v-model="registerForm.email" type="email" class="form-control form-control-lg" placeholder="tu.email@ejemplo.com" required>
+              <label class="form-label" for="register-email">Email</label>
+              <input id="register-email" v-model="registerForm.email" type="email" class="form-control form-control-lg" placeholder="tu.email@ejemplo.com" required>
             </div>
             <div class="mb-3">
-              <label class="form-label">Contraseña</label>
-              <input v-model="registerForm.password" type="password" class="form-control form-control-lg" placeholder="Mínimo 6 caracteres" required>
+              <label class="form-label" for="register-password">Contraseña</label>
+              <input id="register-password" v-model="registerForm.password" type="password" class="form-control form-control-lg" placeholder="Mínimo 6 caracteres" required>
             </div>
 
             <div v-if="registerForm.rol === 'COMERCIO'" class="card bg-light border-info mb-3">
               <div class="card-body">
                 <h5 class="card-title text-info mb-3">Información del Negocio</h5>
                 <div class="mb-3">
-                  <label class="form-label">Nombre del comercio *</label>
-                  <input v-model="registerForm.nombreComercio" type="text" class="form-control form-control-lg" placeholder="Ej: Mi Tienda" required>
+                  <label class="form-label" for="register-nombre-comercio">Nombre del comercio *</label>
+                  <input id="register-nombre-comercio" v-model="registerForm.nombreComercio" type="text" class="form-control form-control-lg" placeholder="Ej: Mi Tienda" required>
                 </div>
                 <div class="mb-3">
-                  <label class="form-label">Descripción *</label>
-                  <textarea v-model="registerForm.descripcionComercio" class="form-control form-control-lg" rows="2" placeholder="Cuéntanos qué ofreces..." required></textarea>
+                  <label class="form-label" for="register-descripcion-comercio">Descripción *</label>
+                  <textarea id="register-descripcion-comercio" v-model="registerForm.descripcionComercio" class="form-control form-control-lg" rows="2" placeholder="Cuéntanos qué ofreces..." required></textarea>
                 </div>
                 <div class="mb-3">
-                  <label class="form-label">Categoría *</label>
-                  <select v-model="registerForm.categoriaId" class="form-select form-select-lg" required>
+                  <label class="form-label" for="register-categoria">Categoría *</label>
+                  <select id="register-categoria" v-model="registerForm.categoriaId" class="form-select form-select-lg" required>
                     <option value="">Selecciona una categoría</option>
                     <option v-for="cat in categorias" :key="cat.id" :value="cat.id">
                       {{ cat.nombreCategoria || cat.nombre }}
