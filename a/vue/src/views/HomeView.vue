@@ -83,7 +83,9 @@ onMounted(async () => {
         >
           <img
             :src="fondo"
-            alt="Barrio Fondo"
+            alt=""
+            aria-hidden="true"
+            role="presentation"
             class="w-100 h-100 position-absolute top-0 start-0 object-fit-cover"
             style="filter: brightness(0.6); z-index: 1"
           />
@@ -107,15 +109,17 @@ onMounted(async () => {
               class="bg-white p-2 rounded-4 shadow-lg w-100"
               style="max-width: 700px"
             >
-              <form class="d-flex w-100" @submit.prevent="buscarComercios">
+              <form class="d-flex w-100" role="search" @submit.prevent="buscarComercios">
                 <span class="input-group-text bg-white border-0 ps-3">
                   <i class="bi bi-search text-secondary"></i>
                 </span>
+                <label for="home-search" class="visually-hidden">Buscar comercios o servicios en tu barrio</label>
                 <input
+                  id="home-search"
                   class="form-control border-0 shadow-none ps-2"
                   type="search"
                   placeholder="Busca comercios o servicios en tu barrio"
-                  aria-label="Search"
+                  aria-label="Buscar comercios o servicios en tu barrio"
                   v-model="searchTerm"
                 />
                 <button
