@@ -28,6 +28,8 @@ public class AdminService {
     private final ComercioRepository comercioRepository;
     private final SolicitudColaboracionRepository solicitudColaboracionRepository;
     private final UsuarioRepository usuarioRepository;
+    // 🔔 INYECTAMOS EL SERVICIO DE CORREO AUTOMÁTICAMENTE CON LOMBOK
+    private final EmailService emailService;
 
     @Transactional(readOnly = true)
     public List<ComercioPendienteResponse> listarComerciosPendientes() {
@@ -51,6 +53,11 @@ public class AdminService {
         comercio.setMotivoBloqueoGestion(null);
         comercio = comercioRepository.save(comercio);
 
+        // 📧 ENVÍO DE EMAIL AUTOMÁTICO
+        if (comercio.getUsuarioCreador() != null && comercio.getUsuarioCreador().getEmail() != null) {
+            emailService.enviarEmailResultadoComercio(comercio.getUsuarioCreador().getEmail(), comercio.getNombreComercio(), true, null);
+        }
+
         return toComercioPendienteResponse(comercio);
     }
 
@@ -69,22 +76,22 @@ public class AdminService {
         comercio.setMotivoBloqueoGestion(request.motivoRechazo());
         comercio = comercioRepository.save(comercio);
 
+        // 📧 ENVÍO DE EMAIL AUTOMÁTICO
+        if (comercio.getUsuarioCreador() != null && comercio.getUsuarioCreador().getEmail() != null) {
+            emailService.enviarEmailResultadoComercio(comercio.getUsuarioCreador().getEmail(), comercio.getNombreComercio(), false, request.motivoRechazo());
+        }
+
         return toComercioPendienteResponse(comercio);
     }
 
-@Transactional
-public void eliminarComercio(Long comercioId) {
-    // 1. Buscamos todos los usuarios que pertenecen a este comercio específico
-    List<Usuario> usuariosAsociados = usuarioRepository.findByComercioId(comercioId);
-    
-    // 2. Los eliminamos primero para romper la restricción de clave foránea (FK)
-    if (!usuariosAsociados.isEmpty()) {
-        usuarioRepository.deleteAll(usuariosAsociados);
+    @Transactional
+    public void eliminarComercio(Long comercioId) {
+        List<Usuario> usuariosAsociados = usuarioRepository.findByComercioId(comercioId);
+        if (!usuariosAsociados.isEmpty()) {
+            usuarioRepository.deleteAll(usuariosAsociados);
+        }
+        comercioRepository.deleteById(comercioId);
     }
-    
-    // 3. Ahora que el comercio está libre de dependencias, lo borramos de la base de datos
-    comercioRepository.deleteById(comercioId);
-}
 
     @Transactional(readOnly = true)
     public List<SolicitudColaboracionResponse> listarSolicitudesColaboracion() {
@@ -109,6 +116,11 @@ public void eliminarComercio(Long comercioId) {
 
         actualizarGestionDelComercioPorSolicitud(solicitud, true, null);
 
+        // 📧 ENVÍO DE EMAIL AUTOMÁTICO
+        if (solicitud.getEmailComercio() != null) {
+            emailService.enviarEmailResultadoColaboracion(solicitud.getEmailComercio(), solicitud.getNombreComercio(), true, null);
+        }
+
         return toSolicitudColaboracionResponse(solicitud);
     }
 
@@ -127,6 +139,11 @@ public void eliminarComercio(Long comercioId) {
         solicitud = solicitudColaboracionRepository.save(solicitud);
 
         actualizarGestionDelComercioPorSolicitud(solicitud, false, solicitud.getMotivoRechazo());
+
+        // 📧 ENVÍO DE EMAIL AUTOMÁTICO
+        if (solicitud.getEmailComercio() != null) {
+            emailService.enviarEmailResultadoColaboracion(solicitud.getEmailComercio(), solicitud.getNombreComercio(), false, request.motivoRechazo());
+        }
 
         return toSolicitudColaboracionResponse(solicitud);
     }
