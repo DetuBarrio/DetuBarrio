@@ -2,10 +2,11 @@
 import { ref, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { getAuth } from '../services/authService'
-import axios from 'axios' // 🌟 Importamos Axios
+import axios from 'axios'
 import comercioDefault from '../assets/images/buenaMesa.png'
 
 const favoritos = ref([])
+const isLoading = ref(true)
 const API_URL = 'http://localhost:8080'
 
 const comercioImageModules = import.meta.glob('../assets/images/*.{png,jpg,jpeg,webp,svg,gif}', {
@@ -26,8 +27,38 @@ function getImagenComercio(imageUrl) {
   return comercioDefault
 }
 
-// --- NUEVA LÓGICA DE CARGA DESDE EL BACKEND ---
+// --- DETECTORES INTELIGENTES PARA CAMPOS DE VALORACIÓN ---
+function extraerPuntuacion(comercio) {
+  const nota = comercio.puntuacionMedia ?? comercio.puntuacion ?? comercio.rating ?? comercio.media ?? 0;
+  return Number(nota);
+}
+
+function extraerTotalResenas(comercio) {
+  // 1. 🛡️ Si el backend envía las reseñas como un listado/Array, contamos sus elementos (.length)
+  if (Array.isArray(comercio.resenas)) return comercio.resenas.length;
+  if (Array.isArray(comercio.reseñas)) return comercio.reseñas.length;
+  if (Array.isArray(comercio.reviews)) return comercio.reviews.length;
+  if (Array.isArray(comercio.opiniones)) return comercio.opiniones.length;
+
+  // 2. 🛡️ Si viene ya calculado como un número, buscamos todos los nombres posibles
+  const total = 
+    comercio.totalResenas ?? 
+    comercio.totalReseñas ?? 
+    comercio.numResenas ?? 
+    comercio.numReseñas ??
+    comercio.numeroResenas ??
+    comercio.cantidadResenas ??
+    comercio.resenasCount ??
+    comercio.totalOpiniones ?? 
+    comercio.totalReviews ?? 
+    0;
+    
+  return Number(total);
+}
+
+// --- LÓGICA DE CARGA DESDE EL BACKEND ---
 async function cargarFavoritos() {
+  isLoading.value = true
   try {
     const authData = getAuth()
     const token = authData?.token || localStorage.getItem('token')
@@ -37,9 +68,14 @@ async function cargarFavoritos() {
       headers: { Authorization: `Bearer ${token}` }
     })
     
+    // 🔍 Si sigue saliendo 0, mira este log en la consola de tu navegador (F12) para ver la propiedad exacta
+    console.log("🔍 INSPECCIÓN DE COMERCIO EN FAVORITOS:", response.data)
+    
     favoritos.value = response.data
   } catch (error) {
     console.error("Error al cargar favoritos de la base de datos:", error)
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -49,12 +85,10 @@ async function eliminarDeFavoritos(id) {
     const token = authData?.token || localStorage.getItem('token')
     if (!token) return
 
-    // Como es un conmutador (toggle) y ya sabemos que está en favoritos, esto lo eliminará
     await axios.post(`${API_URL}/api/favoritos/${id}`, {}, {
       headers: { Authorization: `Bearer ${token}` }
     })
     
-    // Lo eliminamos visualmente del array para no tener que volver a hacer una petición GET
     favoritos.value = favoritos.value.filter(item => Number(item.id) !== Number(id))
   } catch (error) {
     console.error("Error al eliminar favorito:", error)
@@ -79,7 +113,14 @@ onMounted(() => {
         </RouterLink>
       </div>
 
-      <div v-if="favoritos.length === 0" class="card border-0 shadow-sm rounded-4 text-center p-5 bg-white">
+      <div v-if="isLoading" class="d-flex flex-column align-items-center justify-content-center py-5 my-5">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+          <span class="visually-hidden">Cargando...</span>
+        </div>
+        <p class="text-muted mt-3 fw-medium">Buscando tus comercios favoritos...</p>
+      </div>
+
+      <div v-else-if="favoritos.length === 0" class="card border-0 shadow-sm rounded-4 text-center p-5 bg-white">
         <div class="p-4 mx-auto bg-light rounded-circle text-danger mb-4 d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
           <i class="bi bi-heartbreak fs-1"></i>
         </div>
@@ -120,10 +161,10 @@ onMounted(() => {
                 
                 <div class="text-warning small mt-auto pt-2 d-flex align-items-center gap-1 border-top">
                   <template v-for="n in 5" :key="n">
-                    <i class="bi" :class="n <= Math.round(comercio.puntuacionMedia || 0) ? 'bi-star-fill' : 'bi-star text-muted'"></i>
+                    <i class="bi" :class="n <= Math.round(extraerPuntuacion(comercio)) ? 'bi-star-fill' : 'bi-star text-muted'"></i>
                   </template>
                   <span class="text-muted ms-1 fw-medium">
-                    {{ Number(comercio.puntuacionMedia || 0).toFixed(1) }} ({{ comercio.totalResenas || 0 }})
+                    {{ extraerPuntuacion(comercio).toFixed(1) }} ({{ extraerTotalResenas(comercio) }})
                   </span>
                 </div>
               </div>

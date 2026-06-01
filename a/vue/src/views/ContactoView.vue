@@ -151,13 +151,19 @@ async function handleCollaboratorSubmit() {
             </div>
 
             <div class="row g-4">
+                <!-- CUADRO DE LA IZQUIERDA -->
                 <div class="col-lg-6">
                     <div class="card border-0 shadow-sm rounded-4 h-100">
                         <div class="card-body p-4 p-lg-5">
                             <div class="d-flex align-items-center gap-2 mb-4">
                                 <span class="section-icon"><i class="bi bi-chat-dots-fill"></i></span>
-                                <h2 class="h3 fw-bold mb-0">Envíanos un mensaje</h2>
+                                <h1 class="h3 fw-bold mb-0">¿Eres un cliente con algún inconveniente?</h1>
                             </div>
+
+                            <!-- 📝 NUEVA DESCRIPCIÓN PARA ASISTENCIA -->
+                            <p class="text-muted mb-4">
+                                Si has tenido algún problema con una reserva, dudas con un comercio local o necesitas soporte, escríbenos y te ayudaremos a solucionarlo enseguida.
+                            </p>
 
                             <form @submit.prevent="handleContactSubmit">
                                 <div class="row g-3">
@@ -212,12 +218,13 @@ async function handleCollaboratorSubmit() {
                     </div>
                 </div>
 
+                <!-- CUADRO DE LA DERECHA -->
                 <div class="col-lg-6">
                     <div class="card border-0 shadow-sm rounded-4 h-100">
                         <div class="card-body p-4 p-lg-5">
                             <div class="d-flex align-items-center gap-2 mb-4">
                                 <span class="section-icon"><i class="bi bi-shop-window"></i></span>
-                                <h2 class="h3 fw-bold mb-0">¿Eres un comercio?</h2>
+                                <h1 class="h3 fw-bold mb-0">¿Quieres registrar tu negocio en DeTuBarrio?</h1>
                             </div>
 
                             <p class="text-muted mb-4">

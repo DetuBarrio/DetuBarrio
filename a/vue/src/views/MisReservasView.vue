@@ -3,11 +3,13 @@ import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 
 const listaReservas = ref([]);
+const isLoading = ref(true); // 🔄 Nuevo estado de carga inicializado en true
 
 // Estado del filtro seleccionado ('TODAS', 'CONFIRMADA', 'CANCELADA', 'FINALIZADA')
 const filtroActual = ref('TODAS');
 
 onMounted(async () => {
+  isLoading.value = true; // Aseguramos que se active al montar el componente
   try {
     const idComercio = localStorage.getItem('comercioId');
     if (idComercio) {
@@ -17,6 +19,8 @@ onMounted(async () => {
     }
   } catch (error) {
     console.error("Error al cargar las reservas en la agenda:", error);
+  } finally {
+    isLoading.value = false; // 🏁 Finaliza la carga pase lo que pase
   }
 });
 
@@ -187,7 +191,14 @@ async function borrarReserva(reserva) {
       </button>
     </div>
 
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+    <div v-if="isLoading" class="d-flex flex-column align-items-center justify-content-center py-5 my-4 bg-white rounded-4 shadow-sm border border-light">
+      <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+      <p class="text-muted mt-3 fw-medium mb-0">Buscando el historial de reservas...</p>
+    </div>
+
+    <div v-else class="card border-0 shadow-sm rounded-4 overflow-hidden">
       <div class="table-responsive">
         <table class="table custom-table mb-0 align-middle">
           <thead>
