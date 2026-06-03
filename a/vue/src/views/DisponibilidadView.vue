@@ -8,7 +8,7 @@
             <header class="mb-4 d-flex justify-content-between align-items-center">
               <div>
                 <h2 class="fw-bold text-dark-blue mb-1">Gestión de Citas</h2>
-                <p class="text-muted small">Configura fechas y horas específicas para tus clientes.</p>
+                <p class="text-muted small">Configura rangos de fechas y horas para generar tus citas automáticamente.</p>
               </div>
               <button class="btn btn-outline-primary rounded-pill px-4" @click="$router.push('/dashboard/comercio')">
                 <i class="bi bi-arrow-left me-2"></i> Volver
@@ -16,27 +16,46 @@
             </header>
 
             <section class="new-schedule-section mb-5 p-4 rounded-3 bg-aliceblue border border-info-subtle">
-              <h5 class="fw-bold mb-3 text-primary">Añadir Nuevo Horario</h5>
+              <h5 class="fw-bold mb-3 text-primary"><i class="bi bi-magic me-2"></i>Generador Masivo de Disponibilidad</h5>
+              
               <div class="row g-3">
-                <div class="col-md-4">
-                  <label class="form-label fw-semibold small">Seleccionar Fecha</label>
-                  <input type="date" v-model="nuevaFecha" class="form-control border-0 shadow-sm">
+                <div class="col-md-6 col-lg-3">
+                  <label class="form-label fw-semibold small">Desde el día</label>
+                  <input type="date" v-model="fechaInicio" class="form-control border-0 shadow-sm">
                 </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-semibold small">Hora Inicio</label>
+                <div class="col-md-6 col-lg-3">
+                  <label class="form-label fw-semibold small">Hasta el día</label>
+                  <input type="date" v-model="fechaFin" class="form-control border-0 shadow-sm">
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                  <label class="form-label fw-semibold small">Hora Apertura (Inicio)</label>
                   <input type="time" v-model="horaInicio" class="form-control border-0 shadow-sm">
                 </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-semibold small">Hora Fin</label>
+                <div class="col-md-6 col-lg-3">
+                  <label class="form-label fw-semibold small">Hora Cierre (Fin)</label>
                   <input type="time" v-model="horaFin" class="form-control border-0 shadow-sm">
                 </div>
+
+                <div class="col-12">
+                  <label class="form-label fw-semibold small">Duración de cada cita / intervalo</label>
+                  <select v-model="duracionIntervalo" class="form-select border-0 shadow-sm">
+                    <option :value="15">Cada 15 minutes</option>
+                    <option :value="20">Cada 20 minutos</option>
+                    <option :value="30">Cada 30 minutos</option>
+                    <option :value="45">Cada 45 minutos</option>
+                    <option :value="60">Cada 1 hora (60 min)</option>
+                    <option :value="120">Cada 2 horas (120 min)</option>
+                  </select>
+                </div>
               </div>
-              <button class="btn btn-primary-detu w-100 mt-4 py-2 fw-bold shadow-sm" @click="agregarALista">
-                <i class="bi bi-plus-circle me-2"></i> Añadir a la lista temporal
+
+              <button class="btn btn-primary-detu w-100 mt-4 py-25 fw-bold shadow-sm" @click="generarIntervalosLote">
+                <i class="bi bi-cpu-fill me-2"></i> Procesar y Generar Bloques de Citas
               </button>
             </section>
 
-            <div class="table-responsive rounded-3 border">
+            <div class="table-responsive rounded-3 border tabla-scrollable">
               <table class="table table-hover align-middle mb-0">
                 <thead class="bg-primary text-white">
                   <tr>
@@ -62,7 +81,11 @@
 
                   <tr v-for="(n, index) in nuevosIntervalos" :key="'new-' + index" class="table-warning shadow-none">
                     <td class="px-4 py-3 fw-bold">{{ n.fecha }}</td>
-                    <td class="px-4 py-3 fw-bold">{{ n.inicio }} - {{ n.fin }}</td>
+                    <td class="px-4 py-3 fw-bold">
+                      <span class="badge bg-warning-subtle text-warning-dark rounded-pill px-3 py-2">
+                        {{ n.inicio.substring(0,5) }} - {{ n.fin.substring(0,5) }}
+                      </span>
+                    </td>
                     <td class="px-4 py-3 text-center">
                       <div class="d-flex align-items-center justify-content-center gap-2">
                         <span class="badge bg-warning text-dark border border-warning-subtle">No guardado</span>
@@ -76,7 +99,7 @@
                   <tr v-if="listaHorarios.length === 0 && nuevosIntervalos.length === 0">
                     <td colspan="3" class="text-center py-5 text-muted">
                       <i class="bi bi-calendar-x d-block fs-2 mb-2"></i>
-                      No hay horarios configurados.
+                      No hay horarios configurados ni autogenerados en cola.
                     </td>
                   </tr>
                 </tbody>
@@ -89,7 +112,7 @@
               :disabled="nuevosIntervalos.length === 0"
             >
               <i class="bi bi-cloud-upload me-2"></i> 
-              {{ nuevosIntervalos.length > 0 ? `Guardar ${nuevosIntervalos.length} cambios en el servidor` : 'Sincronizado con la nube' }}
+              {{ nuevosIntervalos.length > 0 ? `Subir y Activar ${nuevosIntervalos.length} Citas al Servidor` : 'Sincronizado con la nube' }}
             </button>
           </div>
         </div>
@@ -127,32 +150,29 @@ export default {
   name: 'DisponibilidadView',
   data() {
     return {
-      comercioId: null, // Cambiado de 1 a null
-      nuevaFecha: '',
+      comercioId: null,
+      fechaInicio: '',
+      fechaFin: '',
       horaInicio: '',
       horaFin: '',
+      duracionIntervalo: 30,
       listaHorarios: [],
       nuevosIntervalos: [],
       selectedDateLabel: 'Hoy'
     }
   },
   async mounted() {
-    // 1. Obtener el usuarioId del localStorage
     const usuarioId = localStorage.getItem('usuarioId');
-    
     if (usuarioId) {
       try {
-        // 2. Buscar a qué comercio pertenece este usuario
         const resComercio = await axios.get(`http://localhost:8080/api/comercios/usuario/${usuarioId}`);
         this.comercioId = resComercio.data.id;
-        
-        // 3. Una vez tenemos el ID real, cargamos sus horarios
         this.cargarHorarios();
       } catch (error) {
         console.error("Error al identificar el comercio del usuario:", error);
       }
     } else {
-      console.warn("No se encontró usuarioId en el almacenamiento local.");
+      console.warn("No se encontró usuarioId del almacenamiento local.");
     }
   },
   methods: {
@@ -164,32 +184,78 @@ export default {
         console.error("Error al cargar:", error);
       }
     },
-    agregarALista() {
-      if (this.nuevaFecha && this.horaInicio && this.horaFin) {
-        this.nuevosIntervalos.push({
-          fecha: this.nuevaFecha,
-          inicio: this.horaInicio + ":00",
-          fin: this.horaFin + ":00"
-        });
-        this.horaInicio = '';
-        this.horaFin = '';
+    generarIntervalosLote() {
+      if (!this.fechaInicio || !this.fechaFin || !this.horaInicio || !this.horaFin) {
+        alert("Por favor, rellena los rangos completos (Fechas y Horas) para calcular los bloques.");
+        return;
       }
+
+      const inicioD = new Date(this.fechaInicio + 'T00:00:00');
+      const finD = new Date(this.fechaFin + 'T00:00:00');
+
+      if (inicioD > finD) {
+        alert("La fecha de inicio no puede superar la fecha de finalización.");
+        return;
+      }
+
+      if (this.horaInicio >= this.horaFin) {
+        alert("La hora de apertura tiene que ser menor que la hora de cierre.");
+        return;
+      }
+
+      let totalContador = 0;
+      let diaActual = new Date(inicioD);
+
+      while (diaActual <= finD) {
+        const yyyy = diaActual.getFullYear();
+        const mm = String(diaActual.getMonth() + 1).padStart(2, '0');
+        const dd = String(diaActual.getDate()).padStart(2, '0');
+        const fechaStr = `${yyyy}-${mm}-${dd}`;
+
+        const [hIni, mIni] = this.horaInicio.split(':').map(Number);
+        const [hFin, mFin] = this.horaFin.split(':').map(Number);
+
+        let minutosActuales = hIni * 60 + mIni;
+        const minutosLimite = hFin * 60 + mFin;
+        const paso = Number(this.duracionIntervalo);
+
+        while (minutosActuales + paso <= minutosLimite) {
+          const iniH = Math.floor(minutosActuales / 60);
+          const iniM = minutosActuales % 60;
+          
+          const finH = Math.floor((minutosActuales + paso) / 60);
+          const finM = (minutosActuales + paso) % 60;
+
+          const strInicio = String(iniH).padStart(2, '0') + ':' + String(iniM).padStart(2, '0') + ':00';
+          const strFin = String(finH).padStart(2, '0') + ':' + String(finM).padStart(2, '0') + ':00';
+
+          this.nuevosIntervalos.push({
+            fecha: fechaStr,
+            inicio: strInicio,
+            fin: strFin
+          });
+
+          totalContador++;
+          minutosActuales += paso;
+        }
+        diaActual.setDate(diaActual.getDate() + 1);
+      }
+      alert(`¡Éxito! Se han pre-calculado ${totalContador} bloques de citas en la tabla inferior.`);
     },
     async guardarCambios() {
-    try {
+      try {
         const payload = {
-        comercioId: this.comercioId,
-        intervalos: this.nuevosIntervalos
+          comercioId: this.comercioId,
+          intervalos: this.nuevosIntervalos
         };
         await axios.post('http://localhost:8080/api/disponibilidad/configurar', payload);
         this.nuevosIntervalos = [];
         this.cargarHorarios();
-        alert("¡Guardado con éxito!");
-    } catch (error) {
-        // Si el backend lanza el error de solapamiento, lo mostramos aquí
+        alert("¡Todos los bloques horarios se han subido con éxito!");
+      } catch (error) {
         const mensaje = error.response?.data?.error || "Error al sincronizar";
         alert("Cuidado: " + mensaje);
-    }
+      }
     },
     async eliminar(id, index, esNuevo) {
       if (confirm("¿Seguro que quieres borrar este horario?")) {
@@ -210,6 +276,23 @@ export default {
 </script>
 
 <style scoped>
+/* 🕶️ CONTROL DE SCROLL Y CONTENEDOR TIPO CUADRADO */
+.tabla-scrollable {
+  max-height: 420px;       /* Ajusta esta altura al gusto para que parezca un cuadrado perfecto */
+  overflow-y: auto;        /* Añade el scroll vertical automático */
+  position: relative;
+}
+
+/* 📌 EFECTO STICKY: Mantiene los títulos arriba al bajar con el scroll */
+.tabla-scrollable thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background-color: #3b82f6 !important; /* Mismo color azul primario para que tape los datos que suben */
+  box-shadow: inset 0 -1px 0 rgba(0,0,0,0.12); /* Sutil línea separadora inferior */
+}
+
+/* Estilos complementarios estándar */
 .text-dark-blue { color: #1a237e; }
 .bg-aliceblue { background-color: #f8fbff; }
 .btn-primary-detu { background-color: #3b82f6; color: white; border: none; border-radius: 10px; transition: all 0.3s; }
@@ -221,4 +304,6 @@ export default {
 .btn-icon-danger:hover { color: #a71d2a; }
 .bg-primary { background-color: #3b82f6 !important; }
 .table-warning { background-color: #fff9db !important; }
+.text-warning-dark { color: #856404; }
+.py-25 { padding-top: 0.65rem; padding-bottom: 0.65rem; }
 </style>
