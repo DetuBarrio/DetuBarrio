@@ -193,6 +193,11 @@ public class ComercioService {
         return new ProductoComercioResponse(p.getId(), p.getNombreProducto(), p.getDescripcion(), cp.getPrecio(), p.getImagen());
     }
 
+    @Transactional
+    public String subirImagenProducto(MultipartFile archivo) throws IOException {
+        return subirImagen(archivo, "productos");
+    }
+
     private String subirImagen(MultipartFile archivo, String carpeta) throws IOException {
         if (usaCloudinary()) {
             try {
