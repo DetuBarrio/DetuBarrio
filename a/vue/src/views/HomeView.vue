@@ -3,12 +3,11 @@ import { ref, onMounted } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import fondo from '../assets/images/fondo.png';
 import comercioDefault from '../assets/images/buenaMesa.png'; 
+import { apiUrl } from '../config/api'
 
 const router = useRouter()
 const searchTerm = ref('')
 const comerciosDestacados = ref([])
-
-const API_URL = 'http://localhost:8080'
 
 // Detecta automáticamente todas las imágenes procesadas por Vite en assets
 const comercioImageModules = import.meta.glob('../assets/images/*.{png,jpg,jpeg,webp,svg,gif}', {
@@ -27,7 +26,7 @@ function getImagenComercio(imageUrl) {
   }
 
   if (typeof imageUrl === 'string' && imageUrl.startsWith('/uploads')) {
-    return `${API_URL}${imageUrl}`
+    return apiUrl(imageUrl)
   }
 
   if (/^https?:\/\//i.test(imageUrl) || imageUrl.startsWith('data:')) {
@@ -59,7 +58,7 @@ function buscarComercios() {
 
 onMounted(async () => {
   try {
-    const response = await fetch('http://localhost:8080/api/comercios')
+    const response = await fetch(apiUrl('/api/comercios'))
     if (response.ok) {
       const data = await response.json()
       

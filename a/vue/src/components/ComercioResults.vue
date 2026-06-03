@@ -1,9 +1,9 @@
 <script setup>
 import { ref } from 'vue'
 import ComercioCard from './ComercioCard.vue'
+import { apiUrl } from '../config/api'
 
 // --- CONFIGURACIÓN DE RUTAS E IMÁGENES INTEGRADAS ---
-const API_URL = 'http://localhost:8080'
 
 // Detecta automáticamente todas las imágenes procesadas por Vite en assets
 const comercioImageModules = import.meta.glob('../assets/images/*.{png,jpg,jpeg,webp,svg,gif}', {
@@ -23,7 +23,7 @@ function normalizeImageUrl(imageUrl) {
   }
 
   if (typeof imageUrl === 'string' && imageUrl.startsWith('/uploads')) {
-    return `${API_URL}${imageUrl}`
+    return apiUrl(imageUrl)
   }
 
   if (/^https?:\/\//i.test(imageUrl) || imageUrl.startsWith('data:')) {

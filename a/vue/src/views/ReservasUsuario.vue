@@ -79,6 +79,7 @@
 import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
 import { getAuth } from '../services/authService';
+import { apiUrl } from '../config/api';
 
 const pestanaActiva = ref('proximas');
 const loading = ref(false);
@@ -102,7 +103,7 @@ async function cargarReservasDelUsuario() {
   loading.value = true;
   try {
     const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-    const response = await axios.get(`http://localhost:8080/api/reservas/usuario/${usuarioId}`, config);
+    const response = await axios.get(apiUrl(`/api/reservas/usuario/${usuarioId}`), config);
     reservas.value = response.data;
   } catch (error) {
     console.error("Error recuperando las reservas de la base de datos:", error);
@@ -134,7 +135,7 @@ async function cancelarCita(idReserva) {
   const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
 
   try {
-    await axios.put(`http://localhost:8080/api/reservas/${idReserva}/cancelar`, {}, config);
+    await axios.put(apiUrl(`/api/reservas/${idReserva}/cancelar`), {}, config);
     alert("Cita anulada correctamente.");
     await cargarReservasDelUsuario();
   } catch (error) {

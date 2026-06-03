@@ -50,6 +50,7 @@
 import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
 import { getAuth } from '../services/authService'; 
+import { apiUrl } from '../config/api';
 
 const props = defineProps(['idComercio', 'disponibilidades']);
 const fechaSeleccionada = ref('');
@@ -115,7 +116,7 @@ const confirmarReserva = async () => {
     
     const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
     
-    await axios.post('http://localhost:8080/api/reservas', reservaData, config);
+    await axios.post(apiUrl('/api/reservas'), reservaData, config);
     
     alert('¡Reserva realizada con éxito!');
     location.reload(); 

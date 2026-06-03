@@ -145,6 +145,7 @@
 
 <script>
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 
 export default {
   name: 'DisponibilidadView',
@@ -165,7 +166,7 @@ export default {
     const usuarioId = localStorage.getItem('usuarioId');
     if (usuarioId) {
       try {
-        const resComercio = await axios.get(`http://localhost:8080/api/comercios/usuario/${usuarioId}`);
+        const resComercio = await axios.get(apiUrl(`/api/comercios/usuario/${usuarioId}`));
         this.comercioId = resComercio.data.id;
         this.cargarHorarios();
       } catch (error) {
@@ -178,7 +179,7 @@ export default {
   methods: {
     async cargarHorarios() {
       try {
-        const response = await axios.get(`http://localhost:8080/api/disponibilidad/comercio/${this.comercioId}`);
+        const response = await axios.get(apiUrl(`/api/disponibilidad/comercio/${this.comercioId}`));
         this.listaHorarios = response.data;
       } catch (error) {
         console.error("Error al cargar:", error);
@@ -248,7 +249,7 @@ export default {
           comercioId: this.comercioId,
           intervalos: this.nuevosIntervalos
         };
-        await axios.post('http://localhost:8080/api/disponibilidad/configurar', payload);
+        await axios.post(apiUrl('/api/disponibilidad/configurar'), payload);
         this.nuevosIntervalos = [];
         this.cargarHorarios();
         alert("¡Todos los bloques horarios se han subido con éxito!");
@@ -263,7 +264,7 @@ export default {
           this.nuevosIntervalos.splice(index, 1);
         } else {
           try {
-            await axios.delete(`http://localhost:8080/api/disponibilidad/${id}`);
+            await axios.delete(apiUrl(`/api/disponibilidad/${id}`));
             this.cargarHorarios();
           } catch (error) {
             alert("No se pudo borrar de la base de datos.");

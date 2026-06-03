@@ -1,19 +1,25 @@
 package detubarrio.rest.service;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import detubarrio.rest.dto.*;
 import detubarrio.rest.model.*;
 import detubarrio.rest.repository.*;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Map;
 import java.util.UUID;
 import java.util.List;
 import java.util.Optional;
@@ -30,6 +36,18 @@ public class ComercioService {
     @Autowired private ProductoRepository productoRepository;
     @Autowired private CategoriaRepository categoriaRepository;
     @Autowired private UsuarioRepository usuarioRepository;
+
+    @Value("${CLOUDINARY_CLOUD_NAME:}")
+    private String cloudinaryCloudName;
+
+    @Value("${CLOUDINARY_API_KEY:}")
+    private String cloudinaryApiKey;
+
+    @Value("${CLOUDINARY_API_SECRET:}")
+    private String cloudinaryApiSecret;
+
+    @Value("${CLOUDINARY_FOLDER:detubarrio}")
+    private String cloudinaryFolder;
     
 
     @Transactional(readOnly = true)
@@ -128,8 +146,16 @@ public class ComercioService {
         comercio.setUbicacion(ubicacion); 
 
         try {
-            if (logo != null && !logo.isEmpty()) comercio.setLogo("/uploads/" + guardarArchivo(logo));
-            if (banner != null && !banner.isEmpty()) comercio.setBanner("/uploads/" + guardarArchivo(banner));
+            if (logo != null && !logo.isEmpty()) {
+                String logoAnterior = comercio.getLogo();
+                comercio.setLogo(subirImagen(logo, "logos"));
+                eliminarImagenSiEsCloudinary(logoAnterior);
+            }
+            if (banner != null && !banner.isEmpty()) {
+                String bannerAnterior = comercio.getBanner();
+                comercio.setBanner(subirImagen(banner, "banners"));
+                eliminarImagenSiEsCloudinary(bannerAnterior);
+            }
         } catch (IOException e) { 
             throw new RuntimeException(e); 
         }
@@ -167,12 +193,100 @@ public class ComercioService {
         return new ProductoComercioResponse(p.getId(), p.getNombreProducto(), p.getDescripcion(), cp.getPrecio(), p.getImagen());
     }
 
-    private String guardarArchivo(MultipartFile archivo) throws IOException {
+    private String subirImagen(MultipartFile archivo, String carpeta) throws IOException {
+        if (usaCloudinary()) {
+            try {
+                Cloudinary cloudinary = new Cloudinary(ObjectUtils.asMap(
+                        "cloud_name", cloudinaryCloudName,
+                        "api_key", cloudinaryApiKey,
+                        "api_secret", cloudinaryApiSecret
+                ));
+
+                Map<?, ?> resultado = cloudinary.uploader().upload(archivo.getBytes(), ObjectUtils.asMap(
+                        "folder", cloudinaryFolder + "/" + carpeta,
+                        "resource_type", "image"
+                ));
+
+                Object secureUrl = resultado.get("secure_url");
+                if (secureUrl == null) {
+                    throw new IOException("Cloudinary no devolvió una URL segura para la imagen");
+                }
+
+                return secureUrl.toString();
+            } catch (Exception e) {
+                throw new IOException("No se pudo subir la imagen a Cloudinary", e);
+            }
+        }
+
+        return "/uploads/" + guardarArchivoLocal(archivo);
+    }
+
+    private String guardarArchivoLocal(MultipartFile archivo) throws IOException {
         Path root = Paths.get(UPLOAD_DIR);
         if (!Files.exists(root)) Files.createDirectories(root);
-        String nombreUnico = UUID.randomUUID().toString() + (archivo.getOriginalFilename().contains(".") ? archivo.getOriginalFilename().substring(archivo.getOriginalFilename().lastIndexOf(".")) : "");
+        String nombreOriginal = archivo.getOriginalFilename() != null ? archivo.getOriginalFilename() : "imagen";
+        String extension = nombreOriginal.contains(".") ? nombreOriginal.substring(nombreOriginal.lastIndexOf(".")) : "";
+        String nombreUnico = UUID.randomUUID().toString() + extension;
         Files.copy(archivo.getInputStream(), root.resolve(nombreUnico), StandardCopyOption.REPLACE_EXISTING);
         return nombreUnico;
+    }
+
+    private boolean usaCloudinary() {
+        return StringUtils.hasText(cloudinaryCloudName)
+                && StringUtils.hasText(cloudinaryApiKey)
+                && StringUtils.hasText(cloudinaryApiSecret);
+    }
+
+    private void eliminarImagenSiEsCloudinary(String imageUrl) {
+        if (!usaCloudinary() || !esUrlCloudinary(imageUrl)) {
+            return;
+        }
+
+        try {
+            String publicId = extraerPublicIdCloudinary(imageUrl);
+            if (!StringUtils.hasText(publicId)) {
+                return;
+            }
+
+            Cloudinary cloudinary = new Cloudinary(ObjectUtils.asMap(
+                    "cloud_name", cloudinaryCloudName,
+                    "api_key", cloudinaryApiKey,
+                    "api_secret", cloudinaryApiSecret
+            ));
+            cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
+        } catch (Exception ignored) {
+            // Si el borrado falla, no bloqueamos la actualización del comercio.
+        }
+    }
+
+    private boolean esUrlCloudinary(String imageUrl) {
+        return StringUtils.hasText(imageUrl) && imageUrl.contains("res.cloudinary.com");
+    }
+
+    private String extraerPublicIdCloudinary(String imageUrl) {
+        try {
+            URI uri = URI.create(imageUrl);
+            String path = uri.getPath();
+            int uploadIndex = path.indexOf("/upload/");
+            if (uploadIndex < 0) {
+                return null;
+            }
+
+            String publicId = path.substring(uploadIndex + "/upload/".length());
+            if (publicId.matches("v\\d+/.*")) {
+                publicId = publicId.substring(publicId.indexOf('/') + 1);
+            }
+
+            int lastDot = publicId.lastIndexOf('.');
+            int lastSlash = publicId.lastIndexOf('/');
+            if (lastDot > lastSlash) {
+                publicId = publicId.substring(0, lastDot);
+            }
+
+            return publicId;
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     private ComercioSummaryResponse toSummaryResponse(Comercio c) {

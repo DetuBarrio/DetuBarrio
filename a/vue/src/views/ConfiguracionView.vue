@@ -126,6 +126,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 
 const router = useRouter();
 
@@ -159,7 +160,7 @@ onMounted(async () => {
   }
 
   try {
-    const response = await axios.get(`http://localhost:8080/api/comercios/usuario/${usuarioId}`);
+    const response = await axios.get(apiUrl(`/api/comercios/usuario/${usuarioId}`));
     if (response.data) {
       comercio.value = response.data;
       
@@ -227,7 +228,7 @@ async function guardarDatosGenerales() {
       formData.append('banner', bannerFile.value);
     }
 
-    const response = await axios.put(`http://localhost:8080/api/comercios/${comercio.value.id}/fotos`, formData, {
+    const response = await axios.put(apiUrl(`/api/comercios/${comercio.value.id}/fotos`), formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
 

@@ -75,6 +75,7 @@
 
 <script>
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 
 export default {
   name: 'ClientesView',
@@ -90,7 +91,7 @@ export default {
     const usuarioId = localStorage.getItem('usuarioId');
     if (usuarioId) {
       try {
-        const resComercio = await axios.get(`http://localhost:8080/api/comercios/usuario/${usuarioId}`);
+        const resComercio = await axios.get(apiUrl(`/api/comercios/usuario/${usuarioId}`));
         this.comercioId = resComercio.data.id;
         this.cargarClientes();
       } catch (error) {
@@ -102,7 +103,7 @@ export default {
     async cargarClientes() {
       this.cargando = true; // 🌟 Activar ruedecilla antes de la petición
       try {
-        const response = await axios.get(`http://localhost:8080/api/clientes/comercio/${this.comercioId}`, {
+        const response = await axios.get(apiUrl(`/api/clientes/comercio/${this.comercioId}`), {
           params: { filtro: this.filtroSeleccionado }
         });
         this.listaClientes = response.data;
