@@ -1,5 +1,5 @@
 <template>
-  <div class="card border-0 shadow-sm p-4 sticky-lg-top" style="top: 2rem; background-color: #ffffff; border-radius: 12px;">
+  <div class="card border-0 shadow-sm p-4 sticky-lg-top" style="top: 5.5rem; background-color: #ffffff; border-radius: 12px; z-index: 1000;">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h5 class="fw-bold m-0" style="color: #0f172a;">Filtros</h5>
       <button @click="$emit('clear')" class="btn btn-sm btn-outline-primary rounded-pill px-3">
