@@ -1,8 +1,11 @@
 package detubarrio.rest.service;
 
+import detubarrio.rest.model.Comercio;
 import detubarrio.rest.model.PasswordResetToken;
 import detubarrio.rest.model.Usuario;
+import detubarrio.rest.repository.ComercioRepository;
 import detubarrio.rest.repository.PasswordResetTokenRepository;
+import detubarrio.rest.repository.ReservaRepository;
 import detubarrio.rest.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder; 
@@ -26,7 +29,13 @@ public class UsuarioService {
     private EmailService emailService;
 
     @Autowired
-    private PasswordEncoder passwordEncoder; 
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private ReservaRepository reservaRepository;
+
+    @Autowired
+    private ComercioRepository comercioRepository; 
 
     // 📩 ACCIÓN 1: Generar token y enviar email
     @Transactional
@@ -54,6 +63,63 @@ public class UsuarioService {
 
         // 5. Enviamos el correo de forma asíncrona
         emailService.enviarEmailRecuperacion(usuario.getEmail(), token);
+    }
+
+    @Transactional
+    public Usuario actualizarPerfil(Long userId, String nombre, String email) {
+        Usuario usuario = usuarioRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        if (!usuario.getEmail().equalsIgnoreCase(email) &&
+                usuarioRepository.existsByEmailIgnoreCase(email)) {
+            throw new RuntimeException("El email ya está registrado por otro usuario");
+        }
+
+        usuario.setNombre(nombre);
+        usuario.setEmail(email);
+        return usuarioRepository.save(usuario);
+    }
+
+    @Transactional
+    public void cambiarContrasena(Long userId, String contrasenaActual, String nuevaContrasena) {
+        Usuario usuario = usuarioRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        if (!passwordEncoder.matches(contrasenaActual, usuario.getPasswordHash())) {
+            throw new RuntimeException("La contraseña actual no es correcta");
+        }
+
+        usuario.setPasswordHash(passwordEncoder.encode(nuevaContrasena));
+        usuarioRepository.save(usuario);
+    }
+
+    @Transactional
+    public void eliminarCuenta(Long userId) {
+        Usuario usuario = usuarioRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // 1. Eliminar tokens de recuperación
+        tokenRepository.deleteByUsuario(usuario);
+
+        // 2. Eliminar reservas del usuario
+        reservaRepository.deleteByIdUsuario(userId);
+
+        // 3. Desvincular comercios donde el usuario es creador (poner usuarioCreador a null)
+        Optional<Comercio> comercioCreado = comercioRepository.findByUsuarioCreadorId(userId);
+        comercioCreado.ifPresent(comercio -> {
+            comercio.setUsuarioCreador(null);
+            comercioRepository.save(comercio);
+        });
+
+        // 4. Desvincular su propio comercio (si tiene)
+        if (usuario.getComercio() != null) {
+            Long comercioId = usuario.getComercio().getId();
+            usuario.setComercio(null);
+            usuarioRepository.save(usuario);
+        }
+
+        // 5. Eliminar el usuario
+        usuarioRepository.delete(usuario);
     }
 
     // 🔐 ACCIÓN 2: Validar token y cambiar contraseña

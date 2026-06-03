@@ -19,6 +19,8 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
     
     List<Reserva> findByIdUsuario(Long idUsuario);
 
+    void deleteByIdUsuario(Long idUsuario);
+
     void deleteByDisponibilidadId(Long idDisponibilidad);
 
     // 🌟 QUERY OPTIMIZADA: Quitamos el 'new DTO' y usamos alias (AS) claros
