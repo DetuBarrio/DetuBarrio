@@ -10,6 +10,7 @@ import torfelizImage from '../assets/images/torfeliz.png'
 import fontaneroImage from '../assets/images/fontanero.png'
 import buenaMesaImage from '../assets/images/buenaMesa.png'
 import SeccionReservas from './SeccionReservas.vue'
+import { apiUrl } from '../config/api'
 
 import { getAuth } from '../services/authService' 
 
@@ -33,8 +34,6 @@ const nuevaResena = ref({
 })
 
 const esFavorito = ref(false)
-const API_URL = 'http://localhost:8080'
-
 // --- NUEVA LÓGICA DE FAVORITOS (CONECTADA AL BACKEND) ---
 async function comprobarFavorito() {
   if (!comercio.value || !isLoggedIn.value) return
@@ -44,7 +43,7 @@ async function comprobarFavorito() {
     const token = authData?.token || localStorage.getItem('token')
     
     // Obtenemos la lista de favoritos del usuario para ver si este comercio está
-    const response = await axios.get(`${API_URL}/api/favoritos`, {
+    const response = await axios.get(apiUrl('/api/favoritos'), {
       headers: { Authorization: `Bearer ${token}` }
     })
     
@@ -63,7 +62,7 @@ async function conmutarFavorito() {
     const token = authData?.token || localStorage.getItem('token')
     
     // El backend hace el trabajo sucio y nos devuelve "true" si se añadió o "false" si se quitó
-    const response = await axios.post(`${API_URL}/api/favoritos/${comercio.value.id}`, {}, {
+    const response = await axios.post(apiUrl(`/api/favoritos/${comercio.value.id}`), {}, {
       headers: { Authorization: `Bearer ${token}` }
     })
     
@@ -88,7 +87,7 @@ const DEFAULT_IMAGE = comercioImagesByName.logo_og || comercioImagesByName['logo
 
 function normalizeImageUrl(imageUrl) {
   if (!imageUrl) return DEFAULT_IMAGE
-  if (typeof imageUrl === 'string' && imageUrl.startsWith('/uploads')) return `${API_URL}${imageUrl}`
+  if (typeof imageUrl === 'string' && imageUrl.startsWith('/uploads')) return apiUrl(imageUrl)
   if (/^https?:\/\//i.test(imageUrl) || imageUrl.startsWith('data:')) return imageUrl
 
   const fileName = imageUrl.split('/').pop()

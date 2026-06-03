@@ -4,10 +4,10 @@ import { RouterLink } from 'vue-router'
 import { getAuth } from '../services/authService'
 import axios from 'axios'
 import comercioDefault from '../assets/images/buenaMesa.png'
+import { apiUrl } from '../config/api'
 
 const favoritos = ref([])
 const isLoading = ref(true)
-const API_URL = 'http://localhost:8080'
 
 const comercioImageModules = import.meta.glob('../assets/images/*.{png,jpg,jpeg,webp,svg,gif}', {
   eager: true,
@@ -19,7 +19,7 @@ const comercioImagesByName = Object.fromEntries(
 
 function getImagenComercio(imageUrl) {
   if (!imageUrl) return comercioDefault
-  if (typeof imageUrl === 'string' && imageUrl.startsWith('/uploads')) return `${API_URL}${imageUrl}`
+  if (typeof imageUrl === 'string' && imageUrl.startsWith('/uploads')) return apiUrl(imageUrl)
   if (/^https?:\/\//i.test(imageUrl) || imageUrl.startsWith('data:')) return imageUrl
 
   const fileName = imageUrl.split('/').pop()
@@ -64,7 +64,7 @@ async function cargarFavoritos() {
     const token = authData?.token || localStorage.getItem('token')
     if (!token) return
 
-    const response = await axios.get(`${API_URL}/api/favoritos`, {
+    const response = await axios.get(apiUrl('/api/favoritos'), {
       headers: { Authorization: `Bearer ${token}` }
     })
     
@@ -85,7 +85,7 @@ async function eliminarDeFavoritos(id) {
     const token = authData?.token || localStorage.getItem('token')
     if (!token) return
 
-    await axios.post(`${API_URL}/api/favoritos/${id}`, {}, {
+    await axios.post(apiUrl(`/api/favoritos/${id}`), {}, {
       headers: { Authorization: `Bearer ${token}` }
     })
     

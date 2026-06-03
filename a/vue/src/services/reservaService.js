@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 
-const API_URL = 'http://localhost:8080/api/reservas';
+const API_URL = apiUrl('/api/reservas');
 
 export const reservaService = {
   // Para que Paqui cargue su lista de citas
