@@ -1,134 +1,94 @@
 <template>
-  <div style="background-color: #f8fafc; min-height: 100vh; padding: 2rem 1rem; font-family: sans-serif;">
-    <div style="max-width: 850px; margin: 0 auto;">
-      
-      <div style="margin-bottom: 1rem; display: flex; justify-content: flex-start;">
-        <button type="button" @click="irAlDashboard"
-                style="background: none; border: none; color: #64748b; font-size: 0.9rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; border-radius: 8px; transition: all 0.2s; background-color: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.05);"
-                onmouseover="this.style.color='#0f172a'; this.style.backgroundColor='#f1f5f9';"
-                onmouseout="this.style.color='#64748b'; this.style.backgroundColor='#ffffff';">
-          ⬅️ Volver al Panel
-        </button>
-      </div>
+  <div class="config-page">
+    <div class="page-header">
+      <p class="eyebrow mb-1">Área de comercio</p>
+      <h1 class="h3 fw-bold mb-1">Configuración</h1>
+      <p class="text-muted mb-0">Gestiona la identidad visual y los datos de tu comercio.</p>
+    </div>
 
-      <div style="background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; overflow: hidden;">
-        
-        <header style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); padding: 2rem; color: #ffffff;">
-          <h1 style="color: #ffffff !important; margin: 0; font-size: 1.85rem; font-weight: 800; letter-spacing: -0.025em; display: block;">
-            Configuración del Perfil
-          </h1>
-          <p style="color: #cbd5e1 !important; margin: 0.5rem 0 0 0; font-size: 0.875rem; font-weight: 400;">
-            Gestiona la identidad visual y los datos de tu comercio en tiempo real.
-          </p>
-        </header>
+    <div v-if="loadingComercio" class="text-center py-5">
+      <div class="spinner-border text-primary" role="status"></div>
+      <p class="mt-3 text-muted mb-0 fw-medium">Cargando los datos de tu comercio...</p>
+    </div>
 
-        <div v-if="loadingComercio" style="padding: 3rem; text-center: center; color: #64748b; font-weight: 600; text-align: center;">
-          ⏳ Cargando los datos de tu comercio...
+    <form v-else @submit.prevent="guardarDatosGenerales" class="config-form">
+      <div class="row g-4">
+        <div class="col-12">
+          <div class="config-card">
+            <div class="config-card__head">
+              <h5 class="fw-bold mb-0"><i class="bi bi-image me-2"></i>Identidad visual</h5>
+              <span class="text-muted small">Logo y banner</span>
+            </div>
+
+            <div class="row g-4">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small text-muted">Logo del comercio</label>
+                <input type="file" @change="onFileSelected($event, 'logo')" accept="image/*" class="form-control" />
+                <small class="text-muted d-block mt-1">Recomendado: 500×500px · PNG, JPG</small>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small text-muted">Banner principal</label>
+                <input type="file" @change="onFileSelected($event, 'banner')" accept="image/*" class="form-control" />
+                <small class="text-muted d-block mt-1">Formatos: PNG, JPG</small>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <form v-else @submit.prevent="guardarDatosGenerales" style="margin: 0;">
-          
-          <div style="padding: 2rem; background-color: #f8fafc; border-bottom: 1px solid #e2e8f0;">
-            <h3 style="color: #0f172a; font-size: 0.875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 1.5rem 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem;">
-              🖼️ Identidad Visual
-            </h3>
-            
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
-              
-              <div style="background-color: #ffffff; padding: 1.25rem; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
-                <label style="display: block; font-size: 0.875rem; font-weight: 700; color: #334155; margin-bottom: 0.5rem;">Logo del Comercio</label>
-                <input type="file" @change="onFileSelected($event, 'logo')" accept="image/*"
-                       style="display: block; width: 100%; font-size: 0.875rem; color: #475569; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.5rem; background-color: #f8fafc;">
-                <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.5rem; line-height: 1.4;">
-                  <p style="margin: 0;">• Recomendado: 500x500px</p>
-                  <p style="margin: 0;">• Formatos: PNG, JPG</p>
-                </div>
+        <div class="col-12">
+          <div class="config-card">
+            <div class="config-card__head">
+              <h5 class="fw-bold mb-0"><i class="bi bi-info-circle me-2"></i>Información del establecimiento</h5>
+              <span class="text-muted small">Datos generales</span>
+            </div>
+
+            <div class="row g-4">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small text-muted">Nombre del negocio</label>
+                <input v-model="comercio.nombreComercio" type="text" class="form-control form-control-lg" placeholder="Ej: Chucherías Paqui" required />
               </div>
-
-              <div style="background-color: #ffffff; padding: 1.25rem; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); display: flex; flex-direction: column; justify-content: space-between;">
-                <div>
-                  <label style="display: block; font-size: 0.875rem; font-weight: 700; color: #334155; margin-bottom: 0.5rem;">Banner Principal</label>
-                  <input type="file" @change="onFileSelected($event, 'banner')" accept="image/*"
-                         style="display: block; width: 100%; font-size: 0.875rem; color: #475569; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.5rem; background-color: #f8fafc;">
-                </div>
-                <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.5rem;">
-                  <p style="margin: 0;">• Formatos válidos: PNG, JPG</p>
-                </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small text-muted">📍 Ubicación / Dirección</label>
+                <input v-model="comercio.ubicacion" type="text" class="form-control form-control-lg" placeholder="Calle del Pan, 123, 28080 Madrid" />
               </div>
-
-            </div>
-          </div>
-
-          <div style="padding: 2rem; background-color: #ffffff; display: flex; flex-direction: column; gap: 1.5rem;">
-            <h3 style="color: #0f172a; font-size: 0.875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem;">
-              📝 Información del Establecimiento
-            </h3>
-            
-            <div>
-              <label style="display: block; font-size: 0.875rem; font-weight: 700; color: #334155; margin-bottom: 0.5rem;">Nombre del Negocio</label>
-              <input v-model="comercio.nombreComercio" type="text" placeholder="Ej: Chucherías Paqui"
-                     style="width: 100%; box-sizing: border-box; padding: 0.75rem 1rem; border-radius: 10px; background-color: #f8fafc; border: 1px solid #cbd5e1; font-size: 0.9rem; color: #0f172a; outline: none; transition: all 0.2s;">
-            </div>
-
-            <div>
-              <label style="display: block; font-size: 0.875rem; font-weight: 700; color: #334155; margin-bottom: 0.5rem;">📍 Ubicación / Dirección Física</label>
-              <input v-model="comercio.ubicacion" type="text" placeholder="Ej: Calle del Pan, 123, 28080 Madrid, España"
-                     style="width: 100%; box-sizing: border-box; padding: 0.75rem 1rem; border-radius: 10px; background-color: #f8fafc; border: 1px solid #cbd5e1; font-size: 0.9rem; color: #0f172a; outline: none; transition: all 0.2s;">
-              <span style="font-size: 0.75rem; color: #64748b; display: block; margin-top: 0.4rem;">
-                Escribe la dirección completa. Esta cadena se usará para enlazar automáticamente el perfil con Google Maps.
-              </span>
-            </div>
-
-            <div>
-              <label style="display: block; font-size: 0.875rem; font-weight: 700; color: #334155; margin-bottom: 0.5rem;">Descripción</label>
-              <textarea v-model="comercio.descripcion" rows="4" placeholder="Cuéntale a tus vecinos qué haces especial..."
-                        style="width: 100%; box-sizing: border-box; padding: 0.75rem 1rem; border-radius: 10px; background-color: #f8fafc; border: 1px solid #cbd5e1; font-size: 0.9rem; color: #0f172a; outline: none; resize: none; font-family: sans-serif;"></textarea>
-            </div>
-
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
-              <div>
-                <label style="display: block; font-size: 0.875rem; font-weight: 700; color: #334155; margin-bottom: 0.5rem;">Horario Comercial</label>
-                <input v-model="comercio.horario" type="text" placeholder="Ej: 09:00 - 20:00" 
-                       style="width: 100%; box-sizing: border-box; padding: 0.75rem 1rem; border-radius: 10px; background-color: #f8fafc; border: 1px solid #cbd5e1; font-size: 0.9rem; color: #0f172a; outline: none;">
+              <div class="col-12">
+                <label class="form-label fw-semibold small text-muted">Descripción</label>
+                <textarea v-model="comercio.descripcion" rows="4" class="form-control form-control-lg" placeholder="Cuéntales a tus vecinos qué haces especial..."></textarea>
               </div>
-              <div>
-                <label style="display: block; font-size: 0.875rem; font-weight: 700; color: #334155; margin-bottom: 0.5rem;">Días de Apertura</label>
-                <input v-model="comercio.diasApertura" type="text" placeholder="Ej: Lunes a Sábado" 
-                       style="width: 100%; box-sizing: border-box; padding: 0.75rem 1rem; border-radius: 10px; background-color: #f8fafc; border: 1px solid #cbd5e1; font-size: 0.9rem; color: #0f172a; outline: none;">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small text-muted">Horario comercial</label>
+                <input v-model="comercio.horario" type="text" class="form-control form-control-lg" placeholder="Ej: 09:00 - 20:00" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small text-muted">Días de apertura</label>
+                <input v-model="comercio.diasApertura" type="text" class="form-control form-control-lg" placeholder="Ej: Lunes a Sábado" />
               </div>
             </div>
           </div>
-
-          <div style="padding: 1.5rem 2rem; background-color: #f1f5f9; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; gap: 1rem;">
-            <button type="button" @click="irAlDashboard"
-                    style="background-color: transparent; color: #475569; border: 1px solid #cbd5e1; padding: 0.85rem 1.5rem; border-radius: 10px; font-weight: 700; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s;"
-                    onmouseover="this.style.backgroundColor='#e2e8f0'; this.style.color='#0f172a';"
-                    onmouseout="this.style.backgroundColor='transparent'; this.style.color='#475569';">
-              Cancelar y Salir
-            </button>
-            
-            <button type="submit" :disabled="loading" 
-                    style="width: 100%; max-width: 220px; background-color: #0f172a; color: #ffffff; border: none; padding: 0.85rem 1.5rem; border-radius: 10px; font-weight: 700; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: background-color 0.2s;"
-                    onmouseover="this.style.backgroundColor='#1e1b4b';"
-                    onmouseout="this.style.backgroundColor='#0f172a';">
-              <span v-if="loading">⏳</span>
-              {{ loading ? 'Guardando...' : 'Actualizar Perfil' }}
-            </button>
-          </div>
-
-        </form>
+        </div>
       </div>
-    </div>
+
+      <div class="d-flex justify-content-between align-items-center mt-4">
+        <button type="button" class="btn btn-outline-secondary fw-bold rounded-pill px-4" @click="irAlDashboard">
+          <i class="bi bi-arrow-left me-1"></i> Cancelar y salir
+        </button>
+        <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 py-2" :disabled="loading">
+          <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+          <i v-else class="bi bi-check-lg me-1"></i>
+          {{ loading ? 'Guardando...' : 'Guardar cambios' }}
+        </button>
+      </div>
+    </form>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import axios from 'axios';
-import { apiUrl } from '../config/api';
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import axios from 'axios'
+import { apiUrl } from '../config/api'
 
-const router = useRouter();
+const router = useRouter()
 
 const comercio = ref({
   id: null,
@@ -139,114 +99,161 @@ const comercio = ref({
   diasApertura: '',
   logo: '',
   banner: '',
-  categoriaId: null
-});
+  categoriaId: null,
+})
 
-const logoFile = ref(null);
-const bannerFile = ref(null);
-const loading = ref(false);
-const loadingComercio = ref(true);
+const logoFile = ref(null)
+const bannerFile = ref(null)
+const loading = ref(false)
+const loadingComercio = ref(true)
 
 onMounted(async () => {
-  const usuarioId = localStorage.getItem('usuarioId');
-  
-  // Intento recuperar un ID alternativo de comercio si la ruta falla
-  const backupComercioId = localStorage.getItem('comercioId'); 
-  
+  const usuarioId = localStorage.getItem('usuarioId')
+  const backupComercioId = localStorage.getItem('comercioId')
+
   if (!usuarioId) {
-    console.warn("No hay usuarioId en localStorage");
-    loadingComercio.value = false;
-    return;
+    console.warn('No hay usuarioId en localStorage')
+    loadingComercio.value = false
+    return
   }
 
   try {
-    const response = await axios.get(apiUrl(`/api/comercios/usuario/${usuarioId}`));
+    const response = await axios.get(apiUrl(`/api/comercios/usuario/${usuarioId}`))
     if (response.data) {
-      comercio.value = response.data;
-      
-      // Aseguramos que si el backend devuelve 'nombre' se asigne a 'nombreComercio'
+      comercio.value = response.data
       if (response.data.nombre && !response.data.nombreComercio) {
-        comercio.value.nombreComercio = response.data.nombre;
+        comercio.value.nombreComercio = response.data.nombre
       }
     }
   } catch (error) {
-    console.error("Error cargando comercio desde el endpoint de usuario:", error);
-    
-    // Si falla el endpoint de usuario pero tenemos un ID de comercio en la sesión, lo usamos como salvavidas
+    console.error('Error cargando comercio:', error)
     if (backupComercioId) {
-      console.log(`Usando ID de respaldo: ${backupComercioId}`);
-      comercio.value.id = Number(backupComercioId);
+      comercio.value.id = Number(backupComercioId)
     }
   } finally {
-    loadingComercio.value = false;
+    loadingComercio.value = false
   }
-});
+})
 
 function irAlDashboard() {
-  router.push('/dashboard/comercio');
+  router.push('/dashboard/comercio')
 }
 
 function onFileSelected(event, type) {
-  const file = event.target.files[0];
-  if (!file) return;
-
+  const file = event.target.files[0]
+  if (!file) return
   if (type === 'logo') {
-    logoFile.value = file;
+    logoFile.value = file
   } else {
-    bannerFile.value = file;
+    bannerFile.value = file
   }
 }
 
 async function guardarDatosGenerales() {
-  // Si sigue siendo null, intentamos verificar una vez más en el localStorage antes de fallar
   if (!comercio.value.id) {
-    const ultimoRecursoId = localStorage.getItem('comercioId');
+    const ultimoRecursoId = localStorage.getItem('comercioId')
     if (ultimoRecursoId) {
-      comercio.value.id = Number(ultimoRecursoId);
+      comercio.value.id = Number(ultimoRecursoId)
     } else {
-      alert("Error: No se ha podido vincular un ID de comercio válido para actualizar. Revisa la conexión con el servidor.");
-      return;
+      alert('Error: No se ha podido vincular un ID de comercio válido.')
+      return
     }
   }
 
-  loading.value = true;
+  loading.value = true
   try {
-    const formData = new FormData();
-    
-    // Spring Boot suele mapear "nombre" en el DTO/Entidad
-    formData.append('nombre', comercio.value.nombreComercio || '');
-    formData.append('ubicacion', comercio.value.ubicacion || ''); 
-    formData.append('descripcion', comercio.value.descripcion || '');
-    formData.append('horario', comercio.value.horario || '');
-    formData.append('diasApertura', comercio.value.diasApertura || '');
+    const formData = new FormData()
+    formData.append('nombre', comercio.value.nombreComercio || '')
+    formData.append('ubicacion', comercio.value.ubicacion || '')
+    formData.append('descripcion', comercio.value.descripcion || '')
+    formData.append('horario', comercio.value.horario || '')
+    formData.append('diasApertura', comercio.value.diasApertura || '')
 
     if (logoFile.value instanceof File) {
-      formData.append('logo', logoFile.value);
+      formData.append('logo', logoFile.value)
     }
-    
     if (bannerFile.value instanceof File) {
-      formData.append('banner', bannerFile.value);
+      formData.append('banner', bannerFile.value)
     }
 
     const response = await axios.put(apiUrl(`/api/comercios/${comercio.value.id}/fotos`), formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
 
     if (response.data) {
-      comercio.value = response.data;
+      comercio.value = response.data
       if (response.data.nombre) {
-        comercio.value.nombreComercio = response.data.nombre;
+        comercio.value.nombreComercio = response.data.nombre
       }
     }
-    
-    alert("¡Perfil actualizado con éxito!");
-    irAlDashboard();
+
+    alert('Perfil actualizado con éxito')
+    irAlDashboard()
   } catch (error) {
-    console.error("Error al guardar:", error);
-    const mensajeError = error.response?.data?.message || "Error interno del servidor (500).";
-    alert(`Error al actualizar: ${mensajeError}\n\nConsejo: Verifica en tu consola de Eclipse/STS por qué falla el servidor en la ruta /api/comercios/${comercio.value.id}/fotos`);
+    console.error('Error al guardar:', error)
+    const mensajeError = error.response?.data?.message || 'Error al actualizar el perfil'
+    alert(`Error: ${mensajeError}`)
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 </script>
+
+<style scoped>
+.config-page {
+  width: 100%;
+}
+
+.page-header {
+  margin-bottom: 1.5rem;
+}
+
+.eyebrow {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--db-primary, #025197);
+}
+
+.config-card {
+  background: #ffffff;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 1.5rem;
+}
+
+.config-card__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.form-control:focus {
+  border-color: var(--db-primary, #025197);
+  box-shadow: 0 0 0 0.2rem rgba(2, 81, 151, 0.15);
+}
+
+.form-control-lg {
+  border-radius: 0.75rem;
+}
+
+.btn-primary {
+  background: var(--db-primary, #025197);
+  border-color: var(--db-primary, #025197);
+  border-radius: 0.75rem;
+}
+
+.btn-primary:hover {
+  background: #014682;
+  border-color: #014682;
+}
+
+.btn-outline-secondary {
+  border-radius: 0.75rem;
+}
+</style>

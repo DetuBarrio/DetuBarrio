@@ -45,6 +45,7 @@ public class DashboardController {
     }
 
     @GetMapping("/usuario")
+    @Transactional(readOnly = true)
     public Map<String, Object> usuario(Authentication authentication) {
         Usuario usuario = loadCurrentUser(authentication.getName());
 
@@ -69,6 +70,7 @@ public class DashboardController {
     }
 
     @GetMapping("/comercio")
+    @Transactional(readOnly = true)
     public Map<String, Object> comercio(Authentication authentication) {
         Usuario usuario = loadCurrentUser(authentication.getName());
 

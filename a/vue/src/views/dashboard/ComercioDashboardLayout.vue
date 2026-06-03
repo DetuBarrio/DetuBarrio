@@ -1,66 +1,16 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRouter, useRoute } from 'vue-router'
-import fondo from '../../assets/images/fondo.png' // Corregida la subida de nivel de carpeta
+import AppBreadcrumbs from '../../components/AppBreadcrumbs.vue'
 import { clearAuth, getAuth } from '../../services/authService'
-import { fetchComercioDashboard } from '../../services/dashboardService'
 
 const router = useRouter()
 const route = useRoute()
 const auth = ref(getAuth())
-const loading = ref(false)
-const errorMessage = ref('')
-const dashboard = ref(null)
-const notificationDismissed = ref(false)
 
-const displayName = computed(() => dashboard.value?.nombre || auth.value?.nombre || 'Comercio')
-const email = computed(() => dashboard.value?.email || auth.value?.email || '')
-const comercioName = computed(() => dashboard.value?.comercioNombre || 'Mi comercio')
-const estadoComercio = computed(() => dashboard.value?.estadoComercio || 'PENDIENTE')
-const gestionAutorizada = computed(() => Boolean(dashboard.value?.gestionAutorizada))
+const displayName = computed(() => auth.value?.nombre || 'Comercio')
+const email = computed(() => auth.value?.email || '')
 const initial = computed(() => displayName.value.trim().charAt(0).toUpperCase() || 'C')
-
-const notificationKey = computed(() => {
-  const emailKey = (auth.value?.email || '').trim().toLowerCase() || 'sin-email'
-  return `detubarrio_comercio_notice_${emailKey}`
-})
-
-const estadoBadgeClass = computed(() => {
-  switch (estadoComercio.value) {
-    case 'APROBADO': return 'bg-success'
-    case 'RECHAZADO': return 'bg-danger'
-    default: return 'bg-warning text-dark'
-  }
-})
-
-const estadoText = computed(() => {
-  switch (estadoComercio.value) {
-    case 'APROBADO': return gestionAutorizada.value ? 'Aprobado y autorizado' : 'Cuenta aprobada'
-    case 'RECHAZADO': return 'Rechazado'
-    default: return 'Pendiente de aprobación'
-  }
-})
-
-const shouldShowStatusNotice = computed(() => {
-  if (estadoComercio.value === 'PENDIENTE') return true
-  if (estadoComercio.value === 'APROBADO' && !gestionAutorizada.value) return true
-  if (estadoComercio.value === 'RECHAZADO') return true
-  return false
-})
-
-const canDismissNotification = computed(() => estadoComercio.value !== 'PENDIENTE')
-
-function abrirGestionHoras() {
-  router.push('/dashboard/comercio/disponibilidad')
-}
-
-function isNotificationDismissed() {
-  return localStorage.getItem(notificationKey.value) === '1'
-}
-
-function setNotificationDismissed() {
-  localStorage.setItem(notificationKey.value, '1')
-}
 
 function redirectByRole() {
   const currentAuth = getAuth()
@@ -76,38 +26,13 @@ function redirectByRole() {
   return true
 }
 
-async function loadDashboard() {
-  loading.value = true
-  errorMessage.value = ''
-  try {
-    dashboard.value = await fetchComercioDashboard()
-    notificationDismissed.value = isNotificationDismissed()
-  } catch (error) {
-    errorMessage.value = error?.response?.data?.details?.[0] || error?.message || 'No se pudo cargar el panel de comercio.'
-  } finally {
-    loading.value = false
-  }
-}
-
-async function handleDismissNotification() {
-  if (estadoComercio.value === 'RECHAZADO') {
-    setNotificationDismissed()
-    clearAuth()
-    router.replace({ name: 'login' })
-    return
-  }
-  setNotificationDismissed()
-  notificationDismissed.value = true
-}
-
 function handleLogout() {
   clearAuth()
-  router.replace({ name: 'login' })
+  router.push({ name: 'login' })
 }
 
-onMounted(async () => {
-  if (!redirectByRole()) return
-  await loadDashboard()
+onMounted(() => {
+  redirectByRole()
 })
 </script>
 
@@ -117,7 +42,7 @@ onMounted(async () => {
       <div class="profile-card">
         <div class="profile-avatar">{{ initial }}</div>
         <div class="overflow-hidden">
-          <h6 class="mb-1 fw-bold text-dark text-truncate">{{ comercioName }}</h6>
+          <h6 class="mb-1 fw-bold text-dark text-truncate">{{ displayName }}</h6>
           <small class="text-muted text-truncate d-block">{{ email }}</small>
         </div>
       </div>
@@ -151,6 +76,7 @@ onMounted(async () => {
     </aside>
 
     <section class="dashboard-content">
+      <AppBreadcrumbs />
       <RouterView />
     </section>
   </main>

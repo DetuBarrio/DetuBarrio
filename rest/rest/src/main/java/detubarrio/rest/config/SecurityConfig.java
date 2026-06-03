@@ -72,6 +72,9 @@ public class SecurityConfig {
                 
                 // Otras rutas protegidas de tu app
                 .requestMatchers("/api/comentarios").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/api/auth/me").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/auth/me").authenticated()
+                .requestMatchers("/api/auth/change-password").authenticated()
                 .requestMatchers("/api/dashboard/**", "/api/auth/me").authenticated()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 
