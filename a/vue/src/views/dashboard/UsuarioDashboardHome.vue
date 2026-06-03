@@ -35,6 +35,28 @@ onMounted(async () => {
 function goToReservations() {
   router.push({ name: 'dashboard-usuario-reservas' })
 }
+
+function formatDate(dateStr) {
+  if (!dateStr) return '-'
+  const d = new Date(dateStr + 'T00:00:00')
+  return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function estadoBadgeClass(estado) {
+  switch (estado) {
+    case 'CONFIRMADA': return 'status-confirmada'
+    case 'CANCELADA': return 'status-cancelada'
+    default: return 'status-pendiente'
+  }
+}
+
+function estadoLabel(estado) {
+  switch (estado) {
+    case 'CONFIRMADA': return 'Confirmada'
+    case 'CANCELADA': return 'Cancelada'
+    default: return 'Pendiente'
+  }
+}
 </script>
 
 <template>
@@ -81,14 +103,14 @@ function goToReservations() {
         <div class="col-md-4">
           <div class="metric-card shadow-sm" @click="goToReservations" style="cursor: pointer;">
             <p class="text-muted mb-2">Reservas activas</p>
-            <div class="metric-value">3</div>
-            <small class="text-success">+1 esta semana</small>
+            <div class="metric-value">{{ dashboard?.reservasActivas ?? 0 }}</div>
+            <small class="text-success">+{{ dashboard?.reservasEstaSemana ?? 0 }} esta semana</small>
           </div>
         </div>
         <div class="col-md-4">
           <div class="metric-card shadow-sm">
             <p class="text-muted mb-2">Comercios favoritos</p>
-            <div class="metric-value">5</div>
+            <div class="metric-value">{{ dashboard?.favoritosCount ?? 0 }}</div>
             <small class="text-primary">Tus lugares guardados</small>
           </div>
         </div>
@@ -113,29 +135,22 @@ function goToReservations() {
                 <thead>
                   <tr>
                     <th>Comercio</th>
-                    <th>Servicio</th>
                     <th>Fecha</th>
+                    <th>Hora</th>
                     <th class="text-end">Estado</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td class="fw-semibold">Peluquería RD</td>
-                    <td class="text-muted">Corte de pelo</td>
-                    <td>25 Dic, 2025</td>
-                    <td class="text-end"><span class="status-badge status-confirmada">Confirmada</span></td>
+                  <tr v-for="res in (dashboard?.ultimasReservas || [])" :key="res.id">
+                    <td class="fw-semibold">{{ res.comercioNombre }}</td>
+                    <td>{{ formatDate(res.fechaReserva) }}</td>
+                    <td>{{ res.horaInicio?.slice(0,5) || '-' }}</td>
+                    <td class="text-end">
+                      <span class="status-badge" :class="estadoBadgeClass(res.estadoReserva)">{{ estadoLabel(res.estadoReserva) }}</span>
+                    </td>
                   </tr>
-                  <tr>
-                    <td class="fw-semibold">Fisio Luz</td>
-                    <td class="text-muted">Masaje descontracturante</td>
-                    <td>27 Oct, 2025</td>
-                    <td class="text-end"><span class="status-badge status-cancelada">Cancelada</span></td>
-                  </tr>
-                  <tr>
-                    <td class="fw-semibold">Clínica Dental Sonrisas</td>
-                    <td class="text-muted">Limpieza bucal</td>
-                    <td>15 Feb, 2025</td>
-                    <td class="text-end"><span class="status-badge status-pendiente">Pendiente</span></td>
+                  <tr v-if="!dashboard?.ultimasReservas?.length">
+                    <td colspan="4" class="text-center text-muted py-3">No tienes reservas recientes</td>
                   </tr>
                 </tbody>
               </table>

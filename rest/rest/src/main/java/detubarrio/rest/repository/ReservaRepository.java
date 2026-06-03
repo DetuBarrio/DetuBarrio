@@ -30,4 +30,19 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
     List<ClienteProyeccion> findClientesByComercioAndFecha(
             @Param("comercioId") Long comercioId, 
             @Param("fechaLimite") LocalDateTime fechaLimite);
+
+    // Dashboard stats
+    long countByIdComercioAndEstadoReserva(Long idComercio, String estadoReserva);
+
+    long countByIdUsuarioAndEstadoReserva(Long idUsuario, String estadoReserva);
+
+    List<Reserva> findTop5ByIdComercioOrderByFechaCreacionDesc(Long idComercio);
+
+    List<Reserva> findTop5ByIdUsuarioOrderByFechaCreacionDesc(Long idUsuario);
+
+    @Query("SELECT COUNT(r) FROM Reserva r WHERE r.idComercio = :comercioId AND r.disponibilidad.fecha = :fecha AND r.estadoReserva <> 'CANCELADA'")
+    long countReservasHoyByComercio(@Param("comercioId") Long comercioId, @Param("fecha") LocalDate fecha);
+
+    @Query("SELECT COUNT(r) FROM Reserva r WHERE r.idUsuario = :usuarioId AND r.fechaCreacion >= :since")
+    long countReservasByUsuarioSince(@Param("usuarioId") Long usuarioId, @Param("since") LocalDateTime since);
 }
