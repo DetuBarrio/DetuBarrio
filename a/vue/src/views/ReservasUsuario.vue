@@ -1,222 +1,302 @@
 <template>
-  <div style="background-color: #f8fafc; min-height: 100vh; padding: 2rem 1rem; font-family: sans-serif;">
-    <div style="max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem;">
-      
-      <div style="background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; overflow: hidden;">
-        <header style="background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%); padding: 2.5rem 2rem; color: #ffffff;">
-          <h1 style="color: #025197 !important; margin: 0; font-size: 2rem; font-weight: 800; letter-spacing: -0.025em; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">
-            Mis Reservas
-          </h1>
-          <p style="color: #cbd5e1 !important; margin: 0.5rem 0 0 0; font-size: 0.9rem; font-weight: 400;">
-            Visualiza y gestiona las citas pendientes y completadas en tus comercios de confianza.
-          </p>
-        </header>
+  <div class="reservas-page">
+    <div class="page-header">
+      <p class="eyebrow mb-1">Área personal</p>
+      <h1 class="h3 fw-bold mb-1">Mis reservas</h1>
+      <p class="text-muted mb-0">Visualiza y gestiona tus citas pendientes y completadas.</p>
+    </div>
 
-        <div style="display: flex; background-color: #f1f5f9; border-bottom: 1px solid #e2e8f0; padding: 0 1rem;">
-          <button @click="pestanaActiva = 'proximas'" 
-                  :style="obtenerEstiloPestana(pestanaActiva === 'proximas')">
-            📅 Próximas Citas
-          </button>
-          <button @click="pestanaActiva = 'historial'" 
-                  :style="obtenerEstiloPestana(pestanaActiva === 'historial')">
-            📜 Historial de Visitas
-          </button>
-        </div>
-
-        <div style="padding: 2rem; background-color: #ffffff;">
-          
-          <div v-if="loading" style="text-align: center; padding: 3rem; color: #64748b; font-weight: 600;">
-            ⏳ Buscando tus reservas en el sistema...
-          </div>
-
-          <div v-else-if="filtrarReservas.length === 0" style="text-align: center; padding: 4rem 2rem; border: 2px dashed #e2e8f0; border-radius: 12px; color: #64748b;">
-            <p style="font-size: 1.2rem; margin: 0 0 0.5rem 0; font-weight: 700;">No tienes citas registradas aquí</p>
-            <p style="font-size: 0.875rem; margin: 0;">Cuando reserves en algún bar o tienda de tu barrio, aparecerán en esta lista.</p>
-          </div>
-
-          <div v-else style="display: flex; flex-direction: column; gap: 1.25rem;">
-            <div v-for="reserva in filtrarReservas" :key="reserva.id" 
-                 style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-              
-              <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                <h3 style="margin: 0; color: #025197; font-size: 1.25rem; font-weight: 800;">
-                  {{ reserva.nombreComercio || 'Establecimiento Local' }}
-                </h3>
-                
-                <div style="display: flex; gap: 1.5rem; color: #475569; font-size: 0.9rem; font-weight: 500; flex-wrap: wrap;">
-                  <span><span>📆</span> <strong>Fecha:</strong> {{ formatearFecha(reserva.disponibilidad?.fecha) }}</span>
-                  
-                  <span>
-                    <span>⏰</span> <strong>Franja Horaria:</strong> 
-                    {{ obtenerRangoHorario(reserva.disponibilidad) }}
-                  </span>
-                </div>
-              </div>
-
-              <div style="display: flex; align-items: center; gap: 1rem;">
-                <span :style="obtenerEstiloEstado(reserva.estadoReserva)">
-                  {{ reserva.estadoReserva || 'CONFIRMADA' }}
-                </span>
-
-                <button v-if="pestanaActiva === 'proximas' && reserva.estadoReserva !== 'CANCELADA'"
-                        @click="cancelarCita(reserva.id)"
-                        style="background-color: #ef4444; color: #ffffff; border: none; padding: 0.65rem 1.25rem; border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: background-color 0.2s; text-transform: uppercase; letter-spacing: 0.025em; box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);">
-                  ❌ Cancelar Cita
-                </button>
-              </div>
-
-            </div>
-          </div>
-
-        </div>
+    <div class="reservas-card">
+      <div class="tabs-header">
+        <button
+          class="tab-btn"
+          :class="{ active: pestanaActiva === 'proximas' }"
+          @click="pestanaActiva = 'proximas'"
+        >
+          <i class="bi bi-calendar-check me-1"></i> Próximas
+        </button>
+        <button
+          class="tab-btn"
+          :class="{ active: pestanaActiva === 'historial' }"
+          @click="pestanaActiva = 'historial'"
+        >
+          <i class="bi bi-clock-history me-1"></i> Historial
+        </button>
       </div>
 
+      <div class="tabs-content">
+        <div v-if="loading" class="text-center py-5">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p class="mt-3 text-muted mb-0 fw-medium">Cargando tus reservas...</p>
+        </div>
+
+        <div v-else-if="filtrarReservas.length === 0" class="empty-state">
+          <i class="bi bi-calendar-x fs-1 text-muted"></i>
+          <p class="fw-bold mb-1 mt-2">No tienes citas aquí</p>
+          <p class="text-muted small mb-0">Cuando reserves en algún comercio, aparecerán en esta lista.</p>
+        </div>
+
+        <div v-else class="reservas-list">
+          <div v-for="reserva in filtrarReservas" :key="reserva.id" class="reserva-item">
+            <div class="reserva-info">
+              <h5 class="fw-bold mb-1">{{ reserva.nombreComercio || 'Establecimiento' }}</h5>
+              <div class="reserva-meta">
+                <span><i class="bi bi-calendar3 me-1"></i> {{ formatearFecha(reserva.disponibilidad?.fecha) }}</span>
+                <span><i class="bi bi-clock me-1"></i> {{ obtenerRangoHorario(reserva.disponibilidad) }}</span>
+              </div>
+            </div>
+            <div class="reserva-actions">
+              <span class="status-badge" :class="estadoClase(reserva.estadoReserva)">{{ estadoLabel(reserva.estadoReserva) }}</span>
+              <button
+                v-if="pestanaActiva === 'proximas' && reserva.estadoReserva !== 'CANCELADA'"
+                class="btn btn-outline-danger btn-sm fw-bold rounded-pill"
+                @click="cancelarCita(reserva.id)"
+              >
+                <i class="bi bi-x-lg me-1"></i> Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import axios from 'axios';
-import { getAuth } from '../services/authService';
-import { apiUrl } from '../config/api';
+import { ref, computed, onMounted } from 'vue'
+import axios from 'axios'
+import { getAuth } from '../services/authService'
+import { apiUrl } from '../config/api'
 
-const pestanaActiva = ref('proximas');
-const loading = ref(false);
-const reservas = ref([]);
+const pestanaActiva = ref('proximas')
+const loading = ref(false)
+const reservas = ref([])
 
 onMounted(async () => {
-  await cargarReservasDelUsuario();
-});
+  await cargarReservasDelUsuario()
+})
 
 async function cargarReservasDelUsuario() {
-  const authData = getAuth();
-  const rawId = authData?.id || authData?.usuarioId || localStorage.getItem('usuarioId');
-  const usuarioId = rawId ? parseInt(rawId, 10) : null; 
-  const token = authData?.token;
+  const authData = getAuth()
+  const rawId = authData?.id || authData?.usuarioId || localStorage.getItem('usuarioId')
+  const usuarioId = rawId ? parseInt(rawId, 10) : null
+  const token = authData?.token
 
   if (!usuarioId || isNaN(usuarioId)) {
-    console.warn("No se localizó un ID de usuario válido numérico.");
-    return;
+    console.warn('No se localizó un ID de usuario válido numérico.')
+    return
   }
 
-  loading.value = true;
+  loading.value = true
   try {
-    const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-    const response = await axios.get(apiUrl(`/api/reservas/usuario/${usuarioId}`), config);
-    reservas.value = response.data;
+    const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {}
+    const response = await axios.get(apiUrl(`/api/reservas/usuario/${usuarioId}`), config)
+    reservas.value = response.data
   } catch (error) {
-    console.error("Error recuperando las reservas de la base de datos:", error);
+    console.error('Error recuperando las reservas:', error)
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 
 const filtrarReservas = computed(() => {
-  const fechaHoy = new Date().toISOString().split('T')[0];
-
+  const fechaHoy = new Date().toISOString().split('T')[0]
   return reservas.value.filter(reserva => {
-    const estado = (reserva.estadoReserva || 'CONFIRMADA').toUpperCase();
-    const fechaCita = reserva.disponibilidad?.fecha || '';
-
+    const estado = (reserva.estadoReserva || 'CONFIRMADA').toUpperCase()
+    const fechaCita = reserva.disponibilidad?.fecha || ''
     if (pestanaActiva.value === 'proximas') {
-      return fechaCita >= fechaHoy && estado !== 'CANCELADA';
+      return fechaCita >= fechaHoy && estado !== 'CANCELADA'
     } else {
-      return fechaCita < fechaHoy || estado === 'CANCELADA';
+      return fechaCita < fechaHoy || estado === 'CANCELADA'
     }
-  });
-});
+  })
+})
 
 async function cancelarCita(idReserva) {
-  if (!confirm("¿Estás seguro de que deseas anular esta cita de manera permanente?")) return;
-
-  const authData = getAuth();
-  const token = authData?.token;
-  const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-
+  if (!confirm('¿Estás seguro de que deseas cancelar esta reserva?')) return
+  const authData = getAuth()
+  const token = authData?.token
+  const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {}
   try {
-    await axios.put(apiUrl(`/api/reservas/${idReserva}/cancelar`), {}, config);
-    alert("Cita anulada correctamente.");
-    await cargarReservasDelUsuario();
+    await axios.put(apiUrl(`/api/reservas/${idReserva}/cancelar`), {}, config)
+    await cargarReservasDelUsuario()
   } catch (error) {
-    console.error("Fallo al cancelar la cita en el servidor:", error);
-    alert("No se pudo procesar la cancelación en este momento.");
-  }
-}
-
-// --- MAQUETACIÓN Y ESTILOS DINÁMICOS ---
-
-function obtenerEstiloPestana(activa) {
-  return {
-    padding: '1.2rem 1.75rem',
-    fontSize: '0.9rem',
-    fontWeight: '700',
-    backgroundColor: activa ? '#ffffff' : 'transparent',
-    color: activa ? '#025197' : '#64748b',
-    border: 'none',
-    borderBottom: activa ? '3px solid #025197' : '3px solid transparent',
-    cursor: 'pointer',
-    transition: 'all 0.15s ease-in-out',
-    outline: 'none'
-  };
-}
-
-function obtenerEstiloEstado(estado) {
-  const estilosBase = {
-    padding: '0.4rem 0.85rem',
-    borderRadius: '50px',
-    fontSize: '0.75rem',
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em'
-  };
-
-  const estadoNormalizado = (estado || 'CONFIRMADA').toUpperCase();
-
-  switch (estadoNormalizado) {
-    case 'CONFIRMADA':
-    case 'ACEPTADA':
-      return { ...estilosBase, backgroundColor: '#dcfce7', color: '#15803d' };
-    case 'PENDIENTE':
-      return { ...estilosBase, backgroundColor: '#fef9c3', color: '#a16207' };
-    case 'CANCELADA':
-      return { ...estilosBase, backgroundColor: '#fee2e2', color: '#b91c1c' };
-    default:
-      return { ...estilosBase, backgroundColor: '#f1f5f9', color: '#475569' };
+    console.error('Fallo al cancelar la cita:', error)
+    alert('No se pudo procesar la cancelación.')
   }
 }
 
 function formatearFecha(fechaInversa) {
-  if (!fechaInversa) return '';
-  const fragmentos = fechaInversa.split('-');
-  if (fragmentos.length !== 3) return fechaInversa;
-  return `${fragmentos[2]}/${fragmentos[1]}/${fragmentos[0]}`;
+  if (!fechaInversa) return '-'
+  const partes = fechaInversa.split('-')
+  if (partes.length !== 3) return fechaInversa
+  return `${partes[2]}/${partes[1]}/${partes[0]}`
 }
 
 function formatearHora(horaRaw) {
-  if (!horaRaw) return null;
-  const partes = horaRaw.split(':');
-  if (partes.length >= 2) {
-    return `${partes[0]}:${partes[1]}`;
-  }
-  return horaRaw;
+  if (!horaRaw) return null
+  const partes = horaRaw.split(':')
+  return partes.length >= 2 ? `${partes[0]}:${partes[1]}` : horaRaw
 }
 
 function obtenerRangoHorario(disp) {
-  if (!disp) return 'Por definir';
-  
-  const inicioRaw = disp.hora || disp.horaInicio || disp.inicio || disp.franjaHoraria;
-  const finRaw = disp.horaFin || disp.fin || disp.horaFinal;
+  if (!disp) return 'Por definir'
+  const inicio = formatearHora(disp.hora || disp.horaInicio || disp.inicio)
+  const fin = formatearHora(disp.horaFin || disp.fin || disp.horaFinal)
+  if (inicio && fin) return `${inicio} - ${fin}`
+  if (inicio) return inicio
+  return 'Por definir'
+}
 
-  const inicioFormateado = formatearHora(inicioRaw);
-  const finFormateado = formatearHora(finRaw);
-
-  if (inicioFormateado && finFormateado) {
-    return `${inicioFormateado} - ${finFormateado}`;
-  } else if (inicioFormateado) {
-    return inicioFormateado;
+function estadoClase(estado) {
+  switch ((estado || 'CONFIRMADA').toUpperCase()) {
+    case 'CONFIRMADA': return 'status-confirmada'
+    case 'CANCELADA': return 'status-cancelada'
+    default: return 'status-pendiente'
   }
-  
-  return 'Por definir';
+}
+
+function estadoLabel(estado) {
+  switch ((estado || 'CONFIRMADA').toUpperCase()) {
+    case 'CONFIRMADA': return 'Confirmada'
+    case 'CANCELADA': return 'Cancelada'
+    default: return 'Pendiente'
+  }
 }
 </script>
+
+<style scoped>
+.reservas-page {
+  width: 100%;
+}
+
+.page-header {
+  margin-bottom: 1.5rem;
+}
+
+.eyebrow {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--db-primary, #025197);
+}
+
+.reservas-card {
+  background: #ffffff;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.tabs-header {
+  display: flex;
+  background: #f8fafc;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  padding: 0 1rem;
+}
+
+.tab-btn {
+  padding: 1rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  background: transparent;
+  color: #64748b;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tab-btn:hover {
+  color: #025197;
+}
+
+.tab-btn.active {
+  color: #025197;
+  border-bottom-color: #025197;
+  background: #ffffff;
+}
+
+.tabs-content {
+  padding: 1.5rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  border: 2px dashed #e2e8f0;
+  border-radius: 12px;
+  color: #64748b;
+}
+
+.reservas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.reserva-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 1rem;
+  transition: box-shadow 0.2s;
+}
+
+.reserva-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.reserva-info h5 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.reserva-meta {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+  color: #64748b;
+  flex-wrap: wrap;
+}
+
+.reserva-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.status-confirmada {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status-cancelada {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.status-pendiente {
+  background: #fef9c3;
+  color: #a16207;
+}
+
+.btn-outline-danger {
+  border-radius: 999px;
+}
+</style>

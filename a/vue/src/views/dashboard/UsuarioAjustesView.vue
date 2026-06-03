@@ -250,8 +250,7 @@ function togglePass(field) {
 
 <style scoped>
 .settings-page {
-  max-width: 960px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .settings-header {
