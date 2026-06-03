@@ -48,6 +48,14 @@ function abrirGestionHoras() {
   router.push({ name: 'dashboard-comercio-disponibilidad' })
 }
 
+function irAReservas() {
+  router.push({ name: 'dashboard-comercio-reservas' })
+}
+
+function irAClientes() {
+  router.push({ name: 'dashboard-comercio-clientes' })
+}
+
 async function loadDashboard() {
   loading.value = true
   errorMessage.value = ''
@@ -66,6 +74,28 @@ onMounted(async () => {
 
 function handleDismissNotification() {
   notificationDismissed.value = true
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '-'
+  const d = new Date(dateStr + 'T00:00:00')
+  return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function reservaBadgeClass(estado) {
+  switch (estado) {
+    case 'CONFIRMADA': return 'status-confirmada'
+    case 'CANCELADA': return 'status-cancelada'
+    default: return 'status-pendiente'
+  }
+}
+
+function estadoLabel(estado) {
+  switch (estado) {
+    case 'CONFIRMADA': return 'Confirmada'
+    case 'CANCELADA': return 'Cancelada'
+    default: return 'Pendiente'
+  }
 }
 </script>
 
@@ -144,13 +174,13 @@ function handleDismissNotification() {
       </div>
 
       <div class="row g-4 mb-4">
-        <div class="col-md-6">
-          <div class="metric-card-custom p-4 bg-white rounded-4 shadow-sm d-flex align-items-center justify-content-between border-custom-light hover-shadow-metric transition-all">
+        <div class="col-md-4">
+          <div class="metric-card-custom p-4 bg-white rounded-4 shadow-sm d-flex align-items-center justify-content-between border-custom-light hover-shadow-metric transition-all" style="cursor: pointer;" @click="irAReservas">
             <div>
               <p class="text-uppercase tracking-wider small text-muted fw-bold mb-1 fs-7">Reservas para Hoy</p>
-              <div class="metric-value-custom text-dark fw-extrabold display-5 leading-none">8</div>
+              <div class="metric-value-custom text-dark fw-extrabold display-5 leading-none">{{ dashboard?.reservasHoy ?? 0 }}</div>
               <span class="badge bg-success-light text-success rounded-pill px-2 py-1 small fw-bold mt-1 d-inline-block shadow-xs">
-                <i class="bi bi-check-circle-fill me-1"></i> Al día
+                <i class="bi bi-check-circle-fill me-1"></i> Ver reservas
               </span>
             </div>
             <div class="metric-icon-box bg-primary-light text-primary rounded-4 p-3">
@@ -159,17 +189,99 @@ function handleDismissNotification() {
           </div>
         </div>
 
-        <div class="col-md-6">
-          <div class="metric-card-custom p-4 bg-white rounded-4 shadow-sm d-flex align-items-center justify-content-between border-custom-light hover-shadow-metric transition-all">
+        <div class="col-md-4">
+          <div class="metric-card-custom p-4 bg-white rounded-4 shadow-sm d-flex align-items-center justify-content-between border-custom-light hover-shadow-metric transition-all" style="cursor: pointer;" @click="irAReservas">
+            <div>
+              <p class="text-uppercase tracking-wider small text-muted fw-bold mb-1 fs-7">Reservas Activas</p>
+              <div class="metric-value-custom text-dark fw-extrabold display-5 leading-none">{{ dashboard?.reservasActivas ?? 0 }}</div>
+              <span class="badge bg-info-light text-info-emphasis rounded-pill px-2 py-1 small fw-bold mt-1 d-inline-block shadow-xs">
+                <i class="bi bi-check2-circle me-1"></i> Gestionar
+              </span>
+            </div>
+            <div class="metric-icon-box bg-primary-light text-primary rounded-4 p-3">
+              <i class="bi bi-calendar-check-fill fs-3"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="metric-card-custom p-4 bg-white rounded-4 shadow-sm d-flex align-items-center justify-content-between border-custom-light hover-shadow-metric transition-all" style="cursor: pointer;" @click="irAClientes">
             <div>
               <p class="text-uppercase tracking-wider small text-muted fw-bold mb-1 fs-7">Opiniones del Barrio</p>
-              <div class="metric-value-custom text-dark fw-extrabold display-5 leading-none">4</div>
+              <div class="metric-value-custom text-dark fw-extrabold display-5 leading-none">{{ dashboard?.totalResenas ?? 0 }}</div>
               <span class="badge bg-warning-light text-warning-emphasis rounded-pill px-2 py-1 small fw-bold mt-1 d-inline-block shadow-xs">
-                <i class="bi bi-star-fill text-warning me-1"></i> Clientes activos
+                <i class="bi bi-star-fill text-warning me-1"></i> {{ (dashboard?.mediaValoracion ?? 0).toFixed(1) }} / 5
               </span>
             </div>
             <div class="metric-icon-box bg-secondary-light text-secondary-emphasis rounded-4 p-3">
               <i class="bi bi-chat-heart-fill fs-3"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-lg-8">
+          <div class="panel-card shadow-sm h-100">
+            <div class="panel-card__head">
+              <h5 class="fw-bold mb-0">Últimas reservas</h5>
+              <button class="btn btn-sm btn-outline-primary fw-semibold rounded-pill" @click="irAReservas">
+                Ver todas <i class="bi bi-arrow-right ms-1"></i>
+              </button>
+            </div>
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th class="text-end">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="res in (dashboard?.ultimasReservas || [])" :key="res.id" style="cursor: pointer;" @click="irAReservas">
+                    <td class="fw-semibold text-muted">Usuario #{{ res.idUsuario || res.id }}</td>
+                    <td>{{ formatDate(res.fechaReserva) }}</td>
+                    <td>{{ res.horaInicio?.slice(0,5) || '-' }}</td>
+                    <td class="text-end">
+                      <span class="status-badge" :class="reservaBadgeClass(res.estadoReserva)">{{ estadoLabel(res.estadoReserva) }}</span>
+                    </td>
+                  </tr>
+                  <tr v-if="!dashboard?.ultimasReservas?.length">
+                    <td colspan="4" class="text-center text-muted py-3">No hay reservas recientes</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-4">
+          <div class="panel-card shadow-sm h-100">
+            <div class="panel-card__head">
+              <h5 class="fw-bold mb-0">Mi comercio</h5>
+              <span class="text-muted small">Resumen</span>
+            </div>
+            <div class="d-grid gap-3">
+              <div>
+                <div class="text-muted small mb-1">Nombre</div>
+                <div class="fw-semibold">{{ comercioName }}</div>
+              </div>
+              <div>
+                <div class="text-muted small mb-1">Correo</div>
+                <div class="fw-semibold">{{ email }}</div>
+              </div>
+              <div>
+                <div class="text-muted small mb-1">Estado</div>
+                <span class="badge rounded-pill px-3 py-1 fw-bold shadow-xs" :class="estadoBadgeClass">{{ estadoText }}</span>
+              </div>
+              <RouterLink class="btn btn-outline-primary fw-semibold" :to="{ name: 'dashboard-comercio-configuracion' }">
+                <i class="bi bi-gear me-1"></i> Configuración
+              </RouterLink>
+              <RouterLink class="btn btn-outline-primary fw-semibold" :to="{ name: 'dashboard-comercio-disponibilidad' }">
+                <i class="bi bi-sliders me-1"></i> Disponibilidad
+              </RouterLink>
             </div>
           </div>
         </div>
@@ -321,6 +433,45 @@ function handleDismissNotification() {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.panel-card {
+  background: #ffffff;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 1.25rem;
+}
+
+.panel-card__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.status-confirmada {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status-cancelada {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.status-pendiente {
+  background: #fef9c3;
+  color: #a16207;
 }
 
 @media (max-width: 992px) {
