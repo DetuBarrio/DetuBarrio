@@ -10,7 +10,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.Authentication;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -69,6 +71,20 @@ public class ComercioController {
             @PathVariable Long comercioId,
             @Valid @RequestBody ProductoComercioRequest request) {
         return comercioService.agregarProductoAComercio(comercioId, request);
+    }
+
+    @PostMapping("/{comercioId}/productos/imagen")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<Map<String, String>> subirImagenProducto(
+            @PathVariable Long comercioId,
+            @RequestParam MultipartFile imagen) {
+        try {
+            String url = comercioService.subirImagenProducto(imagen);
+            return ResponseEntity.ok(Map.of("url", url));
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "No se pudo subir la imagen: " + e.getMessage()));
+        }
     }
 
     @PostMapping("/{comercioId}/resenas")
