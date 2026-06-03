@@ -4,6 +4,9 @@ import ComercioView from '../views/ComercioView.vue'
 import ComercioDetailView from '../views/ComercioDetailView.vue'
 import AboutView from '../views/AboutView.vue'
 import ContactoView from '../views/ContactoView.vue'
+import TerminosView from '../views/TerminosView.vue'
+import PrivacidadView from '../views/PrivacidadView.vue'
+import FaqView from '../views/FaqView.vue'
 import LoginView from '../views/LoginView.vue'
 import ForgotPasswordView from '../views/ForgotPasswordView.vue' // 🔐 IMPORTACIÓN AÑADIDA
 import AdminView from '../views/AdminView.vue'
@@ -87,6 +90,30 @@ const router = createRouter({
       component: ContactoView,
       meta: {
         breadcrumb: 'Contacto',
+      },
+    },
+    {
+      path: '/terminos',
+      name: 'terminos',
+      component: TerminosView,
+      meta: {
+        breadcrumb: 'Términos y Condiciones',
+      },
+    },
+    {
+      path: '/privacidad',
+      name: 'privacidad',
+      component: PrivacidadView,
+      meta: {
+        breadcrumb: 'Política de Privacidad',
+      },
+    },
+    {
+      path: '/faq',
+      name: 'faq',
+      component: FaqView,
+      meta: {
+        breadcrumb: 'FAQ',
       },
     },
     {

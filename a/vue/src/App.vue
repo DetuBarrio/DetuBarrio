@@ -152,9 +152,9 @@ function handleLogout() {
           <div class="col-lg-2 col-6">
             <h6 class="mb-3">Legal</h6>
             <ul class="list-unstyled small d-flex flex-column gap-2">
-              <li><a href="#" aria-label="Ver términos y condiciones">Términos y Condiciones</a></li>
-              <li><a href="#" aria-label="Ver política de privacidad">Política de Privacidad</a></li>
-              <li><a href="#" aria-label="Ver preguntas frecuentes">FAQ</a></li>
+              <li><RouterLink to="/terminos" aria-label="Ver términos y condiciones">Términos y Condiciones</RouterLink></li>
+              <li><RouterLink to="/privacidad" aria-label="Ver política de privacidad">Política de Privacidad</RouterLink></li>
+              <li><RouterLink to="/faq" aria-label="Ver preguntas frecuentes">FAQ</RouterLink></li>
             </ul>
           </div>
 
