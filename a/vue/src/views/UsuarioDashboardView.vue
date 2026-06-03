@@ -147,7 +147,7 @@ onMounted(async () => {
         <div v-else-if="seccionActiva === 'general'">
           <div class="hero-panel shadow-sm mb-4">
             <div class="hero-panel__text">
-              <h2 class="fw-bold mb-2">¿Lista para tu próxima experiencia local?</h2>
+              <h2 class="fw-bold mb-2">¿Lista para tu próxima experiencia local??</h2>
               <p class="text-muted mb-4">
                 Encuentra y reserva servicios en los comercios de tu barrio de forma rápida y sencilla.
               </p>

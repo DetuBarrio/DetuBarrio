@@ -203,6 +203,15 @@ const router = createRouter({
             breadcrumb: 'Configuración',
           },
         },
+        // 🌟 NUEVA RUTA DE CLIENTES DESBLOQUEADA AQUÍ:
+        {
+          path: 'clientes',
+          name: 'dashboard-comercio-clientes',
+          component: () => import('../views/ClientesView.vue'),
+          meta: {
+            breadcrumb: 'Clientes',
+          },
+        },
       ],
     },
     {
@@ -216,6 +225,11 @@ const router = createRouter({
     {
       path: '/dashboard/comercio/reservas',
       redirect: { name: 'dashboard-comercio-reservas' },
+    },
+    // Extra por si entran a la antigua URL sin barra
+    {
+      path: '/dashboard/comercio/clientes',
+      redirect: { name: 'dashboard-comercio-clientes' },
     },
     {
       path: '/admin',

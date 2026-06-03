@@ -135,7 +135,9 @@ onMounted(async () => {
           <i class="bi bi-clock-fill me-2.5"></i> Horarios
         </RouterLink>
 
-        <a href="#" class="nav-disabled-link"><i class="bi bi-people-fill me-2.5"></i> Clientes</a>
+        <RouterLink to="/dashboard/comercio/clientes" active-class="active">
+          <i class="bi bi-people-fill me-2.5"></i> Clientes
+        </RouterLink>
         
         <RouterLink to="/dashboard/configuracion" active-class="active">
           <i class="bi bi-gear-fill me-2.5"></i> Configuración
@@ -155,7 +157,7 @@ onMounted(async () => {
           <div>
             <p class="eyebrow mb-1 text-primary">Área de comercio</p>
             <h1 class="h3 fw-extrabold text-dark mb-1">Panel general</h1>
-            <p class="text-muted mb-0 small">Bienvenido de nuevo. Aquí tienes un resumen operativo de tu local.</p>
+            <p class="text-muted mb-0 small">Bienvenido de nuevo si quiere. Aquí tienes un resumen operativo de tu local.</p>
           </div>
 
           <div class="header-actions d-flex align-items-center gap-3">
@@ -327,10 +329,6 @@ onMounted(async () => {
   background: rgba(58, 134, 255, 0.08);
   color: #3a86ff;
   font-weight: 700;
-}
-.nav-disabled-link {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /* Botón salir */

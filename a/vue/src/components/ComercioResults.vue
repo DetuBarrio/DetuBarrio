@@ -17,8 +17,9 @@ const comercioImagesByName = Object.fromEntries(
 
 // Función inteligente idéntica a la de ComercioDetalleView
 function normalizeImageUrl(imageUrl) {
-  if (!imageUrl) {
-    return '/placeholder.jpg'
+  // 🌟 CORRECCIÓN: Si no hay imagen (o viene un 'null' en texto), usamos una foto por defecto real y segura
+  if (!imageUrl || imageUrl === 'null' || imageUrl === '') {
+    return 'https://images.unsplash.com/photo-1534723452862-4c874018d66d?q=80&w=600&auto=format&fit=crop'
   }
 
   if (typeof imageUrl === 'string' && imageUrl.startsWith('/uploads')) {
@@ -55,7 +56,6 @@ defineProps({
     type: String,
     required: true
   },
-  // Recibimos la función real de comprobación directamente desde el padre (ComercioView)
   isComercioOpen: {
     type: Function,
     required: true
