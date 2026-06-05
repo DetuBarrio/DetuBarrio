@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import logoOg from '../assets/images/logo_og.png'
 import { getAuth, login, saveAuth } from '../services/authService'
+import { apiUrl } from '../config/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -84,7 +85,7 @@ async function handleLogin() {
 
 async function fetchCategorias() {
   try {
-    const response = await fetch('/api/categorias')
+    const response = await fetch(apiUrl('/api/categorias'))
     if (response.ok) {
       categorias.value = await response.json()
     }
@@ -120,7 +121,7 @@ async function handleRegister() {
       banner: null
     }
 
-    const response = await fetch('/api/auth/register', {
+    const response = await fetch(apiUrl('/api/auth/register'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

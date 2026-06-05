@@ -171,7 +171,7 @@ async function enviarResena() {
     const authData = getAuth();
     const token = authData?.token || localStorage.getItem('token')
     await axios.post(
-      `${API_URL}/api/comercios/${comercio.value.id}/resenas`,
+      apiUrl(`/api/comercios/${comercio.value.id}/resenas`),
       { titulo: nuevaResena.value.titulo, comentario: nuevaResena.value.comentario, valoracion: nuevaResena.value.valoracion },
       { headers: { Authorization: `Bearer ${token}` } }
     )

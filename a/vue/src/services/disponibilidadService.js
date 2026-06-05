@@ -1,4 +1,7 @@
-const API_URL = '/api/disponibilidad';
+import { apiUrl } from '../config/api';
+import { getToken } from './authService';
+
+const API_URL = apiUrl('/api/disponibilidad');
 
 export const disponibilidadService = {
   
@@ -8,8 +11,7 @@ export const disponibilidadService = {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        // Aquí podrías añadir el token si lo necesitas
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${getToken()}`
       },
       body: JSON.stringify(payload)
     });

@@ -146,6 +146,7 @@
 <script>
 import axios from 'axios';
 import { apiUrl } from '../config/api';
+import { getAuth } from '../services/authService';
 
 export default {
   name: 'DisponibilidadView',
@@ -249,7 +250,9 @@ export default {
           comercioId: this.comercioId,
           intervalos: this.nuevosIntervalos
         };
-        await axios.post(apiUrl('/api/disponibilidad/configurar'), payload);
+        const auth = getAuth();
+        const config = auth?.token ? { headers: { Authorization: `Bearer ${auth.token}` } } : {};
+        await axios.post(apiUrl('/api/disponibilidad/configurar'), payload, config);
         this.nuevosIntervalos = [];
         this.cargarHorarios();
         alert("¡Todos los bloques horarios se han subido con éxito!");
@@ -264,7 +267,9 @@ export default {
           this.nuevosIntervalos.splice(index, 1);
         } else {
           try {
-            await axios.delete(apiUrl(`/api/disponibilidad/${id}`));
+            const auth = getAuth();
+            const config = auth?.token ? { headers: { Authorization: `Bearer ${auth.token}` } } : {};
+            await axios.delete(apiUrl(`/api/disponibilidad/${id}`), config);
             this.cargarHorarios();
           } catch (error) {
             alert("No se pudo borrar de la base de datos.");
