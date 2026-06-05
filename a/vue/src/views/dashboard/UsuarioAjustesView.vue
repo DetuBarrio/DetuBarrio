@@ -233,11 +233,11 @@ function togglePass(field) {
           <div v-if="deleting" class="mt-3 p-3 bg-danger-light rounded-3 border border-danger">
             <p class="mb-2 fw-semibold text-danger small">¿Estás seguro? Esta acción no se puede deshacer. Se eliminarán tus datos personales, reservas y toda la información asociada.</p>
             <div class="d-flex gap-2">
-              <button class="btn btn-danger btn-sm fw-bold" :disabled="deleting" @click="handleDeleteAccount">
+              <button class="btn btn-danger btn-sm fw-bold" @click="handleDeleteAccount">
                 <span v-if="deleting" class="spinner-border spinner-border-sm me-1"></span>
                 Sí, eliminar cuenta
               </button>
-              <button class="btn btn-outline-secondary btn-sm fw-bold" :disabled="deleting" @click="deleting = false">
+              <button class="btn btn-outline-secondary btn-sm fw-bold" @click="deleting = false">
                 Cancelar
               </button>
             </div>
