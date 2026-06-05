@@ -63,6 +63,7 @@ CLOUDINARY_CLOUD_NAME=dqewfn7gt
 CLOUDINARY_API_KEY=212171983935936
 CLOUDINARY_API_SECRET=JmP_F2Ndxuo6Fb2s0loTqzvAKtk
 CLOUDINARY_FOLDER=detubarrio
+APP_FRONTEND_URL=https://detubarrio.vercel.app
 EMAIL_USER=dtubarrio@gmail.com
 EMAIL_PASSWORD=pon_aqui_tu_contraseña_de_app
 CONTACT_ADMIN_EMAIL=pon-tu-email@ejemplo.com

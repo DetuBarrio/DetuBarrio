@@ -2,6 +2,7 @@ package detubarrio.rest.service;
 
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -14,6 +15,9 @@ public class EmailService {
 
     @Autowired
     private JavaMailSender mailSender;
+
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
 
     // 📩 NUEVO MÉTODO: Notificar resultado de la solicitud de Comercio (Aprobado/Rechazado)
     @Async
@@ -64,7 +68,7 @@ public class EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(emailDestino);
             message.setSubject("Recuperar Contraseña - DeTuBarrio 🔐");
-            String urlRecuperacion = "http://localhost:5173/#/reset-password?token=" + token;
+            String urlRecuperacion = frontendUrl + "/#/reset-password?token=" + token;
             String cuerpoTexto = "Hola:\n\n"
                     + "Has solicitado restablecer la contraseña de tu cuenta en DeTuBarrio.\n"
                     + "Para continuar, haz clic en el siguiente enlace:\n\n" 
