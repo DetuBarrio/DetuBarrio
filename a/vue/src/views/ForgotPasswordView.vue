@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import { apiUrl } from '../config/api'
 
 const email = ref('')
 const loading = ref(false)
@@ -13,7 +14,7 @@ async function handleRequestReset() {
   successMessage.value = ''
 
   try {
-    const response = await fetch('/api/auth/forgot-password', {
+    const response = await fetch(apiUrl('/api/auth/forgot-password'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email.value.trim() }),

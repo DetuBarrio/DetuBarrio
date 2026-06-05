@@ -1,6 +1,8 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
+import { apiUrl } from '../config/api';
+import { getAuth } from '../services/authService';
 
 const listaReservas = ref([]);
 const isLoading = ref(true); // 🔄 Nuevo estado de carga inicializado en true
@@ -13,7 +15,9 @@ onMounted(async () => {
   try {
     const idComercio = localStorage.getItem('comercioId');
     if (idComercio) {
-      const response = await axios.get(`http://localhost:8080/api/reservas/comercio/${idComercio}`);
+      const auth = getAuth();
+      const config = auth?.token ? { headers: { Authorization: `Bearer ${auth.token}` } } : {};
+      const response = await axios.get(apiUrl(`/api/reservas/comercio/${idComercio}`), config);
       listaReservas.value = response.data;
       console.log("🔍 DATOS REALES DE LAS RESERVAS:", response.data);
     }
@@ -134,7 +138,9 @@ async function borrarReserva(reserva) {
   if (!confirm('¿Estás seguro de que deseas eliminar esta cita?')) return;
   
   try {
-    await axios.delete(`http://localhost:8080/api/reservas/${idReserva}`);
+    const auth = getAuth();
+    const config = auth?.token ? { headers: { Authorization: `Bearer ${auth.token}` } } : {};
+    await axios.delete(apiUrl(`/api/reservas/${idReserva}`), config);
     listaReservas.value = listaReservas.value.filter(r => (r.id !== idReserva && r.idReserva !== idReserva));
     alert("Reserva eliminada con éxito.");
   } catch (error) {
