@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { apiUrl } from '../config/api'
 
 const AUTH_KEY = 'detubarrio_auth'
 
@@ -35,7 +36,7 @@ export function getToken() {
 }
 
 export function createAuthApi() {
-  const instance = axios.create()
+  const instance = axios.create({ baseURL: apiUrl() })
   instance.interceptors.request.use((config) => {
     const token = getToken()
     if (token) {
@@ -48,7 +49,7 @@ export function createAuthApi() {
 }
 
 export async function login(email, password) {
-  const response = await axios.post('/api/auth/login', { email, password })
+  const response = await axios.post(apiUrl('/api/auth/login'), { email, password })
   saveAuth(response.data)
   return response.data
 }

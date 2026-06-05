@@ -1,53 +1,51 @@
 import { createAuthApi } from './authService'
 
 const api = createAuthApi()
-const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
 
 export async function fetchAdminMensajes() {
-  const response = await api.get(`${baseUrl}/api/admin/contacto/mensajes`)
+  const response = await api.get('/api/admin/contacto/mensajes')
   return Array.isArray(response.data) ? response.data : []
 }
 
 export async function fetchAdminColaboraciones() {
-  const response = await api.get(`${baseUrl}/api/admin/contacto/colaboraciones`)
+  const response = await api.get('/api/admin/contacto/colaboraciones')
   return Array.isArray(response.data) ? response.data : []
 }
 
 export async function fetchAdminSolicitudesComercios() {
-  const response = await api.get(`${baseUrl}/api/admin/comercios-pendientes`)
+  const response = await api.get('/api/admin/comercios-pendientes')
   return Array.isArray(response.data) ? response.data : []
 }
 
 export async function aprobarComercio(comercioId) {
-  const response = await api.post(`${baseUrl}/api/admin/comercios/aprobar`, {
+  const response = await api.post('/api/admin/comercios/aprobar', {
     comercioId
   })
   return response.data
 }
 
 export async function rechazarComercio(comercioId, motivoRechazo) {
-  const response = await api.post(`${baseUrl}/api/admin/comercios/rechazar`, {
+  const response = await api.post('/api/admin/comercios/rechazar', {
     comercioId,
     motivoRechazo
   })
   return response.data
 }
 
-// ✅ NUEVA FUNCIÓN: Envía el DELETE al backend usando tu configuración de Axios
 export async function eliminarComercio(comercioId) {
-  const response = await api.delete(`${baseUrl}/api/admin/comercios/${comercioId}`)
+  const response = await api.delete(`/api/admin/comercios/${comercioId}`)
   return response.data
 }
 
 export async function aprobarColaboracion(solicitudId) {
-  const response = await api.post(`${baseUrl}/api/admin/contacto/colaboraciones/aprobar`, {
+  const response = await api.post('/api/admin/contacto/colaboraciones/aprobar', {
     solicitudId,
   })
   return response.data
 }
 
 export async function rechazarColaboracion(solicitudId, motivoRechazo) {
-  const response = await api.post(`${baseUrl}/api/admin/contacto/colaboraciones/rechazar`, {
+  const response = await api.post('/api/admin/contacto/colaboraciones/rechazar', {
     solicitudId,
     motivoRechazo,
   })
@@ -55,7 +53,6 @@ export async function rechazarColaboracion(solicitudId, motivoRechazo) {
 }
 
 export async function fetchAdminComerciosActivos() {
-
-  const response = await api.get(`${baseUrl}/api/comercios`) 
+  const response = await api.get('/api/comercios') 
   return Array.isArray(response.data) ? response.data : []
 }
