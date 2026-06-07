@@ -6,8 +6,7 @@ Este manual describe como utilizar DeTuBarrio en entorno de desarrollo para prue
 
 ## 2. Modos de uso del frontend
 
-- Frontend principal: Vue (`a/vue`)
-- Frontend legacy: HTML estatico (`a/html`)
+- Frontend: Vue (`frontend`)
 
 Recomendacion: usar Vue como referencia principal de demo y evolucion funcional.
 
@@ -16,14 +15,14 @@ Recomendacion: usar Vue como referencia principal de demo y evolucion funcional.
 ### 3.1 Backend
 
 ```powershell
-cd rest/rest
+cd backend
 .\mvnw.cmd spring-boot:run
 ```
 
 ### 3.2 Frontend Vue
 
 ```powershell
-cd a/vue
+cd frontend
 npm install
 npm run dev
 ```

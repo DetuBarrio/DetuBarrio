@@ -4,9 +4,8 @@
 
 DeTuBarrio esta organizado como una arquitectura cliente-servidor con separacion clara entre frontend y backend:
 
-- Backend API REST en Spring Boot (carpeta `rest/rest`)
-- Frontend SPA en Vue 3 + Vite (carpeta `a/vue`)
-- Frontend legacy en HTML/CSS/JS (carpeta `a/html`)
+- Backend API REST en Spring Boot (carpeta `backend`)
+- Frontend SPA en Vue 3 + Vite (carpeta `frontend`)
 - Base de datos MySQL remota o local, gestionada por Flyway
 
 ## 2. Diagrama logico
@@ -16,18 +15,18 @@ DeTuBarrio esta organizado como una arquitectura cliente-servidor con separacion
        |
        | HTTP(S)
        v
-[Frontend Vue (a/vue)] ---------------------------.
+[Frontend Vue (frontend)] ---------------------------.
        |                                          |
        | /api/* (proxy Vite en local)             |
        v                                          |
-[Spring Boot API (rest/rest)]                     |
+[Spring Boot API (backend)]                     |
        |                                          |
        | JPA + Flyway                             |
        v                                          |
 [MySQL (Aiven/local)] <---------------------------'
 ```
 
-Tambien existe frontend legacy (`a/html`) como soporte de maquetas, pruebas o demo independiente.
+
 
 ## 3. Backend (Spring Boot)
 
@@ -114,7 +113,7 @@ Implicaciones:
 
 ## 5. Configuracion de entorno
 
-El backend carga variables desde `rest/rest/.env` mediante:
+El backend carga variables desde `backend/.env` mediante:
 
 - `spring.config.import=optional:file:.env[.properties]`
 
@@ -135,10 +134,10 @@ Buenas practicas:
 
 ### 6.1 Estructura
 
-- `a/vue/src/views`: vistas por pagina
-- `a/vue/src/services`: cliente HTTP hacia backend
-- `a/vue/src/router/index.js`: rutas y guards por rol
-- `a/vue/vite.config.js`: proxy `/api` hacia backend local
+- `frontend/src/views`: vistas por pagina
+- `frontend/src/services`: cliente HTTP hacia backend
+- `frontend/src/router/index.js`: rutas y guards por rol
+- `frontend/vite.config.js`: proxy `/api` hacia backend local
 
 ### 6.2 Flujo de autenticacion
 
@@ -147,34 +146,26 @@ Buenas practicas:
 - interceptor axios añade `Authorization: Bearer ...`
 - guard de rutas redirige segun rol
 
-## 7. Frontend legacy
+## 7. Decisiones de arquitectura
 
-`a/html` mantiene version no SPA con paginas estaticas (login, listado, contacto, dashboards). Es util para:
-
-- demos puntuales
-- comparacion de UX
-- soporte mientras se completa migracion a Vue
-
-## 8. Decisiones de arquitectura
-
-- Monorepo con backend + dos frontends para evolucion gradual
+- Monorepo con backend + frontend para desarrollo integrado
 - Flyway como fuente de verdad del esquema
 - JWT para autenticacion sin estado en servidor
 - Separacion clara de capas para mantenibilidad
 - Configuracion por variables de entorno para despliegues flexibles
 
-## 9. Riesgos tecnicos y recomendaciones
+## 8. Riesgos tecnicos y recomendaciones
 
 Riesgos actuales:
 
 - CORS demasiado abierto para produccion
-- coexistencia de dos frontends puede duplicar mantenimiento
+- riesgo de duplicacion si se reintroduce frontend legacy
 - falta de pipeline de pruebas automatizadas visible en repositorio
 
 Recomendaciones:
 
 1. endurecer CORS y cabeceras para produccion
-2. cerrar estrategia de frontend principal (Vue) y acotar legacy
+2. mantener un solo frontend (Vue) como unico cliente
 3. definir flujo de migraciones incremental (sin editar historico)
 4. incorporar tests de integracion de endpoints criticos
 5. documentar checklist de release y rollback
