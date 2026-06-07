@@ -159,6 +159,8 @@ public class DashboardController {
             throw new IllegalStateException("Solo se puede eliminar un comercio rechazado");
         }
 
+        usuarioRepository.deleteFavoritosByComercioId(comercio.getId());
+
         comercio.setUsuarioCreador(null);
         comercioRepository.save(comercio);
 
