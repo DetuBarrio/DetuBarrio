@@ -86,6 +86,7 @@ public class AdminService {
 
     @Transactional
     public void eliminarComercio(Long comercioId) {
+        usuarioRepository.deleteFavoritosByComercioId(comercioId);
         List<Usuario> usuariosAsociados = usuarioRepository.findByComercioId(comercioId);
         if (!usuariosAsociados.isEmpty()) {
             usuarioRepository.deleteAll(usuariosAsociados);
