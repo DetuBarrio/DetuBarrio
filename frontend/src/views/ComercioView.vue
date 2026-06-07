@@ -21,6 +21,9 @@ const {
   limpiarFiltros,
   formatRating,
   isComercioOpen,
+  currentPage,
+  totalPages,
+  cambiarPagina,
 } = useComercioList()
 </script>
 
@@ -82,7 +85,10 @@ const {
             :isComercioOpen="isComercioOpen"
             :total-comercios="totalComercios"
             :total-resultados="totalResultados"
+            :current-page="currentPage"
+            :total-pages="totalPages"
             @update:search-query="searchQuery = $event"
+            @cambiar-pagina="cambiarPagina"
           />
         </div>
       </div>

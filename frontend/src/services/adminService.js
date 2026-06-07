@@ -53,6 +53,7 @@ export async function rechazarColaboracion(solicitudId, motivoRechazo) {
 }
 
 export async function fetchAdminComerciosActivos() {
-  const response = await api.get('/api/comercios') 
-  return Array.isArray(response.data) ? response.data : []
+  const response = await api.get('/api/comercios', { params: { page: 0, size: 100 } })
+  const data = response.data
+  return Array.isArray(data) ? data : (data.content || [])
 }

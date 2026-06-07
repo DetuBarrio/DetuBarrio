@@ -8,6 +8,8 @@ import detubarrio.rest.repository.*;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -23,7 +25,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class ComercioService {
@@ -51,15 +52,12 @@ public class ComercioService {
     
 
     @Transactional(readOnly = true)
-    public List<ComercioSummaryResponse> listarComercios(Optional<Long> categoriaId) {
-        List<Comercio> comercios = categoriaId
-                .map(id -> comercioRepository.findByCategoriaIdAndEstado(id, EstadoComercio.APROBADO))
-                .orElseGet(() -> comercioRepository.findByEstado(EstadoComercio.APROBADO));
+    public Page<ComercioSummaryResponse> listarComercios(Optional<Long> categoriaId, Pageable pageable) {
+        Page<Comercio> comercios = categoriaId
+                .map(id -> comercioRepository.findByCategoriaIdAndEstadoAndGestionAutorizadaTrue(id, EstadoComercio.APROBADO, pageable))
+                .orElseGet(() -> comercioRepository.findByEstadoAndGestionAutorizadaTrue(EstadoComercio.APROBADO, pageable));
 
-        return comercios.stream()
-                .filter(c -> c.isGestionAutorizada())
-                .map(this::toSummaryResponse)
-                .collect(Collectors.toList());
+        return comercios.map(this::toSummaryResponse);
     }
 
     @Transactional(readOnly = true)

@@ -15,6 +15,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+
 @RestController
 @RequestMapping("/api/comercios")
 @RequiredArgsConstructor // Esto sustituye los @Autowired y limpia el código
@@ -23,8 +26,11 @@ public class ComercioController {
     private final ComercioService comercioService;
 
     @GetMapping
-    public ResponseEntity<List<ComercioSummaryResponse>> listarComercios(@RequestParam Optional<Long> categoriaId) {
-        return ResponseEntity.ok(comercioService.listarComercios(categoriaId));
+    public ResponseEntity<Page<ComercioSummaryResponse>> listarComercios(
+            @RequestParam Optional<Long> categoriaId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        return ResponseEntity.ok(comercioService.listarComercios(categoriaId, PageRequest.of(page, size)));
     }
 
     @GetMapping("/{id}")
