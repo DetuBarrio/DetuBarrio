@@ -21,7 +21,7 @@ Antes de desplegar, los archivos nuevos (Dockerfile, vercel.json, etc.) tienen q
 ```bash
 git add .
 git commit -m "Preparacion para despliegue: Dockerfile, Vercel, CORS configurable"
-git push origin devel_jjcastilla
+git push origin main
 ```
 
 > Si tu rama se llama distinto (`main` o `master`), ajusta el nombre.
