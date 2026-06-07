@@ -61,9 +61,10 @@ onMounted(async () => {
     const response = await fetch(apiUrl('/api/comercios'))
     if (response.ok) {
       const data = await response.json()
+      const lista = Array.isArray(data) ? data : (data.content || [])
       
       // Ordenamos por valoración media (de mayor a menor)
-      comerciosDestacados.value = data
+      comerciosDestacados.value = lista
         .sort((a, b) => (b.media || b.puntuacionMedia || 0) - (a.media || a.puntuacionMedia || 0))
         .slice(0, 4) // Cogemos solo los 4 mejores
     }

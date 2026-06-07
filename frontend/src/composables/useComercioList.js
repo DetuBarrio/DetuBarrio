@@ -17,6 +17,12 @@ export function useComercioList() {
   const horaActual = ref(new Date())
   const isLoading = ref(true)
   const errorMessage = ref('')
+
+  const currentPage = ref(0)
+  const totalPages = ref(0)
+  const totalElements = ref(0)
+  const pageSize = ref(12)
+
   let intervaloHoraActual = null
   const route = useRoute()
 
@@ -37,7 +43,7 @@ export function useComercioList() {
   };
 
   const isComercioOpen = (comercio, hora) => {
-    return true; 
+    return true;
   };
 
   function getCategoriaNombreById(categoriaId) {
@@ -78,16 +84,12 @@ export function useComercioList() {
   }
 
   const comerciosFiltrados = computed(() => {
-    const catNombre = getCategoriaNombreById(categoriaSeleccionada.value)
     return comercios.value.filter((comercio) => {
-      const cumpleCat = !categoriaSeleccionada.value || 
-                       (comercio.categoria?.toLowerCase() === catNombre.toLowerCase()) || 
-                       (String(comercio.categoriaId || comercio.idCategoria) === String(categoriaSeleccionada.value))
-      return cumpleCat && cumpleRangoValoracion(comercio) && cumpleHorario(comercio) && cumpleBusqueda(comercio)
+      return cumpleRangoValoracion(comercio) && cumpleHorario(comercio) && cumpleBusqueda(comercio)
     })
   })
 
-  const totalComercios = computed(() => comercios.value.length)
+  const totalComercios = computed(() => totalElements.value)
   const totalResultados = computed(() => comerciosFiltrados.value.length)
 
   function limpiarFiltros() {
@@ -95,20 +97,57 @@ export function useComercioList() {
     valoracionSeleccionada.value = ''
     horarioSeleccionado.value = ''
     searchQuery.value = ''
+    currentPage.value = 0
+    cargarComercios()
+  }
+
+  function cambiarPagina(pagina) {
+    if (pagina < 0 || pagina >= totalPages.value) return
+    currentPage.value = pagina
+    cargarComercios()
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   function actualizarHoraActual() {
     horaActual.value = new Date()
   }
 
-  // Escucha los cambios del buscador de texto (?q=...) sin los puntos suspensivos molestos
+  async function cargarComercios() {
+    isLoading.value = true
+    errorMessage.value = ''
+    try {
+      const params = {
+        page: currentPage.value,
+        size: pageSize.value,
+      }
+      if (categoriaSeleccionada.value) {
+        params.categoriaId = categoriaSeleccionada.value
+      }
+      const data = await fetchComercios(params)
+      comercios.value = (data.content || []).map((i) => mapComercio(i, comercioImagesByName, DEFAULT_COMERCIO_IMAGE))
+      totalPages.value = data.totalPages || 0
+      totalElements.value = data.totalElements || 0
+      currentPage.value = data.number || 0
+    } catch (e) {
+      console.error(e)
+      errorMessage.value = 'No se pudieron cargar los comercios.'
+      comercios.value = []
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  watch(categoriaSeleccionada, () => {
+    currentPage.value = 0
+    cargarComercios()
+  })
+
   watch(
     () => route.query.q,
     (value) => { searchQuery.value = typeof value === 'string' ? value : '' },
     { immediate: true },
   )
 
-  // OYENTE INTELIGENTE: Sincroniza la categoría pasada por URL (?categoria=Salud) con los desplegables
   const aplicarCategoriaDeRuta = () => {
     const catUrl = route.query.categoria
     if (catUrl && categorias.value.length > 0) {
@@ -121,19 +160,16 @@ export function useComercioList() {
     }
   }
 
-  // Vigila si la URL cambia dinámicamente mientras el usuario navega
   watch(() => route.query.categoria, () => {
     aplicarCategoriaDeRuta()
   })
 
   onMounted(async () => {
     try {
-      const [cat, lista] = await Promise.all([fetchCategorias(), fetchComercios()])
+      const cat = await fetchCategorias()
       categorias.value = cat
-      comercios.value = lista.map((i) => mapComercio(i, comercioImagesByName, DEFAULT_COMERCIO_IMAGE))
-      
-      // Una vez cargadas las categorías desde la BD, comprobamos si venimos rebotados de la Home
       aplicarCategoriaDeRuta()
+      await cargarComercios()
     } catch (e) {
       console.error(e)
       errorMessage.value = 'No se pudieron cargar los comercios.'
@@ -150,5 +186,6 @@ export function useComercioList() {
     comercios, categorias, categoriaSeleccionada, valoracionSeleccionada, horarioSeleccionado,
     searchQuery, horaActual, isLoading, errorMessage, valoracionOpciones, horarioOpciones,
     comerciosFiltrados, totalComercios, totalResultados, limpiarFiltros, formatRating, isComercioOpen,
+    currentPage, totalPages, pageSize, cambiarPagina,
   }
 }

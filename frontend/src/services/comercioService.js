@@ -6,9 +6,9 @@ export async function fetchCategorias() {
   return Array.isArray(respuesta.data) ? respuesta.data : []
 }
 
-export async function fetchComercios() {
-  const respuesta = await axios.get(apiUrl('/api/comercios'))
-  return Array.isArray(respuesta.data) ? respuesta.data : []
+export async function fetchComercios(params = {}) {
+  const respuesta = await axios.get(apiUrl('/api/comercios'), { params })
+  return respuesta.data || { content: [], totalPages: 0, totalElements: 0, number: 0 }
 }
 
 export async function fetchComercioById(comercioId) {

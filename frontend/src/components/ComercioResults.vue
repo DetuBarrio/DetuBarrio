@@ -3,9 +3,6 @@ import { ref } from 'vue'
 import ComercioCard from './ComercioCard.vue'
 import { apiUrl } from '../config/api'
 
-// --- CONFIGURACIÓN DE RUTAS E IMÁGENES INTEGRADAS ---
-
-// Detecta automáticamente todas las imágenes procesadas por Vite en assets
 const comercioImageModules = import.meta.glob('../assets/images/*.{png,jpg,jpeg,webp,svg,gif}', {
   eager: true,
   import: 'default',
@@ -15,9 +12,7 @@ const comercioImagesByName = Object.fromEntries(
   Object.entries(comercioImageModules).map(([path, url]) => [path.split('/').pop(), url]),
 )
 
-// Función inteligente idéntica a la de ComercioDetalleView
 function normalizeImageUrl(imageUrl) {
-  // 🌟 CORRECCIÓN: Si no hay imagen (o viene un 'null' en texto), usamos una foto por defecto real y segura
   if (!imageUrl || imageUrl === 'null' || imageUrl === '') {
     return 'https://images.unsplash.com/photo-1534723452862-4c874018d66d?q=80&w=600&auto=format&fit=crop'
   }
@@ -45,8 +40,7 @@ function normalizeImageUrl(imageUrl) {
   return imageUrl.startsWith('/') ? imageUrl : `/images/${cleanedName}`
 }
 
-// --- PROPS RECIBIDAS ---
-defineProps({
+const props = defineProps({
   comercios: {
     type: Array,
     required: true,
@@ -59,12 +53,56 @@ defineProps({
   isComercioOpen: {
     type: Function,
     required: true
+  },
+  currentPage: {
+    type: Number,
+    default: 0
+  },
+  totalPages: {
+    type: Number,
+    default: 0
   }
 })
 
-// Métodos auxiliares de formateo
+const emit = defineEmits(['cambiar-pagina'])
+
 function formatRating(rating) {
   return Number(rating || 0).toFixed(1)
+}
+
+function paginaAnterior() {
+  if (props.currentPage > 0) {
+    emit('cambiar-pagina', props.currentPage - 1)
+  }
+}
+
+function paginaSiguiente() {
+  if (props.currentPage < props.totalPages - 1) {
+    emit('cambiar-pagina', props.currentPage + 1)
+  }
+}
+
+function irAPagina(pagina) {
+  emit('cambiar-pagina', pagina)
+}
+
+function mostrarPaginas() {
+  const paginas = []
+  const total = props.totalPages
+  const actual = props.currentPage
+  const maxVisibles = 5
+
+  let inicio = Math.max(0, actual - Math.floor(maxVisibles / 2))
+  let fin = Math.min(total, inicio + maxVisibles)
+
+  if (fin - inicio < maxVisibles) {
+    inicio = Math.max(0, fin - maxVisibles)
+  }
+
+  for (let i = inicio; i < fin; i++) {
+    paginas.push(i)
+  }
+  return paginas
 }
 </script>
 
@@ -74,16 +112,16 @@ function formatRating(rating) {
       <ComercioCard
         v-for="comercio in comercios"
         :key="comercio.id"
-        
-        :image-url="normalizeImageUrl(comercio.logo)" 
+
+        :image-url="normalizeImageUrl(comercio.logo)"
         :image-alt="comercio.nombreComercio"
         :category="comercio.categoria"
-        
+
         :is-opened="isComercioOpen(comercio, horaActual)"
-        
+
         :name="comercio.nombreComercio"
-        :star="formatRating(comercio.media || comercio.puntuacionMedia || 0)" 
-        :opinions="'(' + (comercio.total || comercio.totalResenas || 0) + ')'" 
+        :star="formatRating(comercio.media || comercio.puntuacionMedia || 0)"
+        :opinions="'(' + (comercio.total || comercio.totalResenas || 0) + ')'"
         :to="{ name: 'comercio-detalle', params: { id: comercio.id } }"
       />
     </div>
@@ -92,42 +130,69 @@ function formatRating(rating) {
       <i class="bi bi-shop fs-1 text-muted mb-3 d-block"></i>
       <p class="text-muted fs-5">No se encontraron comercios que coincidan con la búsqueda.</p>
     </div>
+
+    <nav v-if="totalPages > 1" class="mt-4" aria-label="Paginación de comercios">
+      <ul class="pagination justify-content-center">
+        <li class="page-item" :class="{ disabled: currentPage <= 0 }">
+          <button class="page-link" @click="paginaAnterior" :disabled="currentPage <= 0">
+            <i class="bi bi-chevron-left"></i>
+          </button>
+        </li>
+        <li
+          v-for="pagina in mostrarPaginas()"
+          :key="pagina"
+          class="page-item"
+          :class="{ active: pagina === currentPage }"
+        >
+          <button class="page-link" @click="irAPagina(pagina)">{{ pagina + 1 }}</button>
+        </li>
+        <li class="page-item" :class="{ disabled: currentPage >= totalPages - 1 }">
+          <button class="page-link" @click="paginaSiguiente" :disabled="currentPage >= totalPages - 1">
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </li>
+      </ul>
+    </nav>
   </div>
 </template>
 
 <style scoped>
-#comercioGrid {
-  transition: all 0.3s ease;
-}
-</style>
+#comercioGrid { transition: all 0.3s ease; }
 
-<style scoped>
-.search-bar .form-control {
-  border-color: #e0e0e0;
-  box-shadow: none;
-}
-
-.search-bar .form-control:focus {
-  border-color: var(--db-secondary);
-  box-shadow: 0 0 0 0.2rem rgba(58, 134, 255, 0.12);
+.pagination .page-link {
+  border-radius: 8px;
+  margin: 0 2px;
+  color: #3a86ff;
+  border: 1px solid #e0e0e0;
+  padding: 0.5rem 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
 }
 
-.border-muted {
-  border-color: #e0e0e0 !important;
+.pagination .page-link:hover {
+  background-color: #f0f4ff;
+  border-color: #3a86ff;
 }
 
-.commerce-search-shell {
-  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+.pagination .page-item.active .page-link {
+  background-color: #3a86ff;
+  border-color: #3a86ff;
+  color: #fff;
 }
 
-.empty-state-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--db-secondary);
-  background: rgba(58, 134, 255, 0.1);
+.pagination .page-item.disabled .page-link {
+  color: #adb5bd;
+  pointer-events: none;
+  background-color: #f8f9fa;
+}
+
+.pagination .page-item:first-child .page-link {
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+}
+
+.pagination .page-item:last-child .page-link {
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
 }
 </style>
