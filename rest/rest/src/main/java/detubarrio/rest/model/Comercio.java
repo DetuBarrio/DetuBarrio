@@ -70,13 +70,13 @@ public class Comercio {
     @JoinColumn(name = "id_categoria", nullable = false)
     private Categoria categoria;
 
-    @OneToMany(mappedBy = "comercio", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "comercio", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ComercioProducto> comercioProductos;
 
-    @OneToMany(mappedBy = "comercio", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "comercio", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Resena> resenas;
 
-    @OneToMany(mappedBy = "comercio", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "comercio", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Disponibilidad> disponibilidades;
 
     @PrePersist
