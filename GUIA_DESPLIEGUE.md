@@ -44,7 +44,7 @@ Render va a coger el código desde GitHub y lo va a empaquetar con el Dockerfile
 | **Name** | `detubarrio-api` |
 | **Root Directory** | `backend` |
 | **Runtime** | `Docker` (Render lo detectará automáticamente por el Dockerfile) |
-| **Branch** | `devel_jjcastilla` (o la que uses) |
+| **Branch** | `main` |
 | **Region** | La más cercana a vosotros (ej. `Frankfurt`) |
 | **Plan** | `Free` |
 
