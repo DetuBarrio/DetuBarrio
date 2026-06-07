@@ -6,18 +6,25 @@
 -- Desactivamos FKs para poder limpiar y reinsertar datos
 SET FOREIGN_KEY_CHECKS = 0;
 
--- Las siguientes tablas son creadas por Hibernate (ddl-auto=update) después de
--- Flyway, así que las dropeamos si existen para que Hibernate las reconstruya.
+-- password_reset_tokens es creada por Hibernate (ddl-auto=update) después de
+-- Flyway, así que la dropeamos si existe para que Hibernate la reconstruya.
 DROP TABLE IF EXISTS password_reset_tokens;
-DROP TABLE IF EXISTS disponibilidades;
+
+-- disponibilidades también es creada por Hibernate, pero necesitamos insertar
+-- datos en ella, así que la creamos aquí con la misma estructura que espera Hibernate.
+CREATE TABLE IF NOT EXISTS disponibilidades (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    comercio_id BIGINT,
+    fecha DATE,
+    hora_inicio TIME,
+    hora_fin TIME,
+    reservado BOOLEAN DEFAULT FALSE
+);
 
 -- ============================================================
 -- 1. LIMPIEZA TOTAL DE DATOS EXISTENTES
--- Nota: disponibilidades y password_reset_tokens son creadas por
--- Hibernate (ddl-auto=update) después de Flyway, por lo que
--- no se truncan aquí. Si ya existen en la BD se limpiarán
--- igualmente con DELETE.
 -- ============================================================
+DELETE FROM disponibilidades;
 DELETE FROM reserva;
 DELETE FROM resena;
 DELETE FROM comercio_producto;
@@ -56,13 +63,10 @@ INSERT INTO categoria (id_categoria, nombre_categoria, descripcion) VALUES
 -- ============================================================
 -- 3. USUARIOS (contraseñas en Bcrypt)
 --    admin@gmail.com / zeta123
---    El resto de usuarios: 123456 / usuario / password / comercio
 -- ============================================================
 INSERT INTO usuario (id_usuario, nombre, email, password_hash, rol, id_comercio) VALUES
--- ADMIN
 (1,  'Admin DeTuBarrio',   'admin@gmail.com',             '$2b$10$aeWvy/HdZvu.A.6sG0oqTuFIA7XF.qm2DVwos9V438qwZ2W/EEcMa', 'ADMIN', NULL),
 
--- USUARIOS normales
 (2,  'María García',       'maria.garcia@gmail.com',       '$2b$10$cTkAL2p6Y9VyoyTcO2NxEOpDGicwoYOqbDYmm3B63gq4fy1aYJ75S', 'USUARIO', NULL),
 (3,  'Carlos López',       'carlos.lopez@gmail.com',       '$2b$10$cTkAL2p6Y9VyoyTcO2NxEOpDGicwoYOqbDYmm3B63gq4fy1aYJ75S', 'USUARIO', NULL),
 (4,  'Ana Martínez',       'ana.martinez@gmail.com',       '$2b$10$vgM6yowF2PvH9mcB9uruV.oPM1wspGBmzr13soPthaYVhZgoF4d2O', 'USUARIO', NULL),
@@ -72,7 +76,6 @@ INSERT INTO usuario (id_usuario, nombre, email, password_hash, rol, id_comercio)
 (8,  'Elena González',     'elena.gonzalez@gmail.com',     '$2b$10$vgM6yowF2PvH9mcB9uruV.oPM1wspGBmzr13soPthaYVhZgoF4d2O', 'USUARIO', NULL),
 (9,  'Miguel Ramírez',     'miguel.ramirez@gmail.com',     '$2b$10$BM0TWLVOUF89BgMz0JWAleaCtiBX89FH13FIyHMIP2xgFjob.S9Q2', 'USUARIO', NULL),
 
--- COMERCIO (propietarios de comercios)
 (10, 'Laura Díaz',          'contacto@belladivina.com',     '$2b$10$OIlEFY48lcVDD3P3T1/c5OsQXpvE23w7py56Yg.tsYDYOZIiYTueS', 'COMERCIO', NULL),
 (11, 'Roberto Ruiz',        'info@peluqueriaestilo.com',   '$2b$10$OIlEFY48lcVDD3P3T1/c5OsQXpvE23w7py56Yg.tsYDYOZIiYTueS', 'COMERCIO', NULL),
 (12, 'Pedro Hernández',     'info@mercadofresco.com',      '$2b$10$OIlEFY48lcVDD3P3T1/c5OsQXpvE23w7py56Yg.tsYDYOZIiYTueS', 'COMERCIO', NULL),
@@ -91,73 +94,73 @@ INSERT INTO usuario (id_usuario, nombre, email, password_hash, rol, id_comercio)
 -- ============================================================
 INSERT INTO comercio (id_comercio, nombre_comercio, descripcion, horario, dias_apertura, logo, banner, estado, gestion_autorizada, fecha_solicitud, id_usuario_creador, id_categoria) VALUES
 (1,  'Belleza Divina',
-     'Centro de estética y belleza especializado en tratamientos faciales, corporales y peluquería. Contamos con los mejores profesionales para cuidar de ti.',
+     'Centro de estética y belleza especializado en tratamientos faciales, corporales y peluquería.',
      '09:00 - 20:00', 'Lunes a Sábado',
      '/images/comercios/belleza-divina-logo.png', '/images/comercios/belleza-divina-banner.png',
      'APROBADO', TRUE, NOW() - INTERVAL 120 DAY, 10, 1),
 
 (2,  'Peluquería Estilo',
-     'Peluquería unisex con las últimas tendencias en cortes, coloración y peinados. También ofrecemos servicios de barbería.',
+     'Peluquería unisex con las últimas tendencias en cortes, coloración y peinados.',
      '09:30 - 19:30', 'Lunes a Viernes',
      '/images/comercios/peluqueria-estilo-logo.png', '/images/comercios/peluqueria-estilo-banner.png',
      'APROBADO', TRUE, NOW() - INTERVAL 100 DAY, 11, 1),
 
 (3,  'Mercado Fresco',
-     'Tienda de alimentación con productos frescos de proximidad. Fruta, verdura, carne, pescado y productos ecológicos.',
+     'Tienda de alimentación con productos frescos de proximidad.',
      '08:00 - 21:00', 'Lunes a Domingo',
      '/images/comercios/mercado-fresco-logo.png', '/images/comercios/mercado-fresco-banner.png',
      'APROBADO', TRUE, NOW() - INTERVAL 90 DAY, 12, 2),
 
 (4,  'Centro Médico Vital',
-     'Centro médico multidisciplinar con consultas de medicina general, fisioterapia, psicología y nutrición. Pide cita online.',
+     'Centro médico multidisciplinar con consultas de medicina general, fisioterapia y psicología.',
      '08:00 - 21:00', 'Lunes a Viernes',
      '/images/comercios/centro-medico-logo.png', '/images/comercios/centro-medico-banner.png',
      'APROBADO', TRUE, NOW() - INTERVAL 80 DAY, 13, 3),
 
 (5,  'Boutique Trendy',
-     'Tienda de moda femenina y masculina con las últimas tendencias. Vestidos, complementos, calzado y mucho más.',
+     'Tienda de moda femenina y masculina con las últimas tendencias.',
      '10:00 - 20:30', 'Lunes a Sábado',
      '/images/comercios/boutique-trendy-logo.png', '/images/comercios/boutique-trendy-banner.png',
      'APROBADO', TRUE, NOW() - INTERVAL 70 DAY, 14, 4),
 
 (6,  'Hogar & Confort',
-     'Tienda de decoración y artículos para el hogar. Muebles, textiles, iluminación y accesorios para hacer tu casa más acogedora.',
+     'Tienda de decoración y artículos para el hogar.',
      '10:00 - 19:00', 'Lunes a Sábado',
      '/images/comercios/hogar-confort-logo.png', '/images/comercios/hogar-confort-banner.png',
      'APROBADO', TRUE, NOW() - INTERVAL 60 DAY, 15, 5),
 
 (7,  'FitZone Centro Deportivo',
-     'Gimnasio y centro deportivo con sala de musculación, clases dirigidas, spinning, pilates y entrenamiento personal.',
+     'Gimnasio con sala de musculación, clases dirigidas, spinning y pilates.',
      '07:00 - 22:30', 'Lunes a Domingo',
      '/images/comercios/fitzone-logo.png', '/images/comercios/fitzone-banner.png',
      'APROBADO', TRUE, NOW() - INTERVAL 50 DAY, 16, 6),
 
 (8,  'Academia Avanza',
-     'Academia de formación con cursos de idiomas, informática, apoyo escolar y preparación de oposiciones.',
+     'Academia de formación con cursos de idiomas, informática y apoyo escolar.',
      '09:00 - 21:00', 'Lunes a Viernes',
      '/images/comercios/academia-avanza-logo.png', '/images/comercios/academia-avanza-banner.png',
      'APROBADO', TRUE, NOW() - INTERVAL 45 DAY, 17, 7),
 
 (9,  'Asesoría Pro',
-     'Servicios profesionales de asesoría fiscal, laboral y contable. Gestión de nóminas, declaraciones y trámites.',
+     'Servicios profesionales de asesoría fiscal, laboral y contable.',
      '09:00 - 18:00', 'Lunes a Viernes',
      '/images/comercios/asesoria-pro-logo.png', '/images/comercios/asesoria-pro-banner.png',
      'APROBADO', TRUE, NOW() - INTERVAL 40 DAY, 18, 8),
 
 (10, 'Sabor Casero',
-     'Restaurante de cocina tradicional casera. Menú del día, raciones y platos para llevar. Comida de la abuela.',
+     'Restaurante de cocina tradicional casera. Menú del día y raciones.',
      '13:00 - 16:00 / 20:00 - 23:00', 'Martes a Domingo',
      '/images/comercios/sabor-casero-logo.png', '/images/comercios/sabor-casero-banner.png',
      'APROBADO', TRUE, NOW() - INTERVAL 35 DAY, 19, 9),
 
 (11, 'Cafetería Central',
-     'Cafetería acogedora con desayunos, meriendas y brunch. Cafés de especialidad, bollería artesana y smoothies.',
+     'Cafetería acogedora con desayunos, meriendas y brunch.',
      '07:30 - 21:00', 'Lunes a Sábado',
      '/images/comercios/cafeteria-central-logo.png', '/images/comercios/cafeteria-central-banner.png',
      'APROBADO', TRUE, NOW() - INTERVAL 30 DAY, 20, 9),
 
 (12, 'TechZone',
-     'Tienda de tecnología y electrónica. Venta y reparación de ordenadores, móviles, consolas y accesorios.',
+     'Tienda de tecnología y electrónica. Venta y reparación.',
      '10:00 - 20:00', 'Lunes a Sábado',
      '/images/comercios/techzone-logo.png', '/images/comercios/techzone-banner.png',
      'APROBADO', TRUE, NOW() - INTERVAL 25 DAY, 21, 10);
@@ -179,7 +182,7 @@ UPDATE usuario SET id_comercio = 11 WHERE id_usuario = 20;
 UPDATE usuario SET id_comercio = 12 WHERE id_usuario = 21;
 
 -- ============================================================
--- 6. PERSONAS, CLIENTES, TRABAJADORES (para FKs de tablas huérfanas)
+-- 6. PERSONAS Y CLIENTES (para FKs de tablas huérfanas)
 -- ============================================================
 INSERT INTO persona (id_persona, nombre, apellidos, email, telefono) VALUES
 (1, 'María',   'García López',    'maria.garcia@gmail.com',     '612345678'),
@@ -202,36 +205,33 @@ INSERT INTO cliente (id_cliente, estado, nivel, id_persona) VALUES
 (8, TRUE, 'NORMAL', 8);
 
 INSERT INTO servicio (id_servicio, nombre_servicio, descripcion, precio, id_cliente) VALUES
-(1,  'RESERVA', 'Reserva en Belleza Divina',   35.00, 1),
-(2,  'RESERVA', 'Reserva en Peluquería Estilo', 25.00, 2),
-(3,  'RESERVA', 'Reserva en Centro Médico',     50.00, 3),
-(4,  'RESERVA', 'Reserva en FitZone',           40.00, 4),
-(5,  'RESERVA', 'Reserva en Sabor Casero',      30.00, 5),
-(6,  'RESERVA', 'Reserva en Cafetería Central', 12.00, 6),
-(7,  'RESERVA', 'Reserva en Belleza Divina',    45.00, 7),
-(8,  'RESERVA', 'Reserva en Academia Avanza',   60.00, 8),
-(9,  'RESERVA', 'Reserva en Centro Médico',     65.00, 1),
-(10, 'RESERVA', 'Reserva en FitZone',           35.00, 2);
+(1,  'RESERVA', 'Reserva Belleza Divina',   35.00, 1),
+(2,  'RESERVA', 'Reserva Peluquería Estilo', 25.00, 2),
+(3,  'RESERVA', 'Reserva Centro Médico',     50.00, 3),
+(4,  'RESERVA', 'Reserva FitZone',           40.00, 4),
+(5,  'RESERVA', 'Reserva Sabor Casero',      30.00, 5),
+(6,  'RESERVA', 'Reserva Cafetería Central', 12.00, 6),
+(7,  'RESERVA', 'Reserva Belleza Divina',    45.00, 7),
+(8,  'RESERVA', 'Reserva Academia Avanza',   60.00, 8),
+(9,  'RESERVA', 'Reserva Centro Médico',     65.00, 1),
+(10, 'RESERVA', 'Reserva FitZone',           35.00, 2);
 
 -- ============================================================
--- 7. DISPONIBILIDADES (para reservas)
+-- 7. DISPONIBILIDADES
 -- ============================================================
 INSERT INTO disponibilidades (id, comercio_id, fecha, hora_inicio, hora_fin, reservado) VALUES
--- Belleza Divina (comercio 1)
 (1,  1, CURDATE() + INTERVAL 1 DAY,  '09:00', '10:00', FALSE),
 (2,  1, CURDATE() + INTERVAL 1 DAY,  '10:00', '11:00', FALSE),
 (3,  1, CURDATE() + INTERVAL 1 DAY,  '11:00', '12:00', FALSE),
 (4,  1, CURDATE() + INTERVAL 1 DAY,  '16:00', '17:00', FALSE),
 (5,  1, CURDATE() + INTERVAL 2 DAY,  '09:00', '10:00', FALSE),
 (6,  1, CURDATE() + INTERVAL 2 DAY,  '10:00', '11:00', FALSE),
--- Peluquería Estilo (comercio 2)
 (7,  2, CURDATE() + INTERVAL 1 DAY,  '09:30', '10:30', FALSE),
 (8,  2, CURDATE() + INTERVAL 1 DAY,  '10:30', '11:30', FALSE),
 (9,  2, CURDATE() + INTERVAL 1 DAY,  '11:30', '12:30', FALSE),
 (10, 2, CURDATE() + INTERVAL 1 DAY,  '16:00', '17:00', FALSE),
 (11, 2, CURDATE() + INTERVAL 2 DAY,  '09:30', '10:30', FALSE),
 (12, 2, CURDATE() + INTERVAL 2 DAY,  '10:30', '11:30', FALSE),
--- Centro Médico Vital (comercio 4)
 (13, 4, CURDATE() + INTERVAL 1 DAY,  '08:00', '09:00', FALSE),
 (14, 4, CURDATE() + INTERVAL 1 DAY,  '09:00', '10:00', FALSE),
 (15, 4, CURDATE() + INTERVAL 1 DAY,  '10:00', '11:00', FALSE),
@@ -240,19 +240,16 @@ INSERT INTO disponibilidades (id, comercio_id, fecha, hora_inicio, hora_fin, res
 (18, 4, CURDATE() + INTERVAL 1 DAY,  '16:00', '17:00', FALSE),
 (19, 4, CURDATE() + INTERVAL 2 DAY,  '09:00', '10:00', FALSE),
 (20, 4, CURDATE() + INTERVAL 2 DAY,  '10:00', '11:00', FALSE),
--- FitZone (comercio 7)
 (21, 7, CURDATE() + INTERVAL 1 DAY,  '07:00', '08:00', FALSE),
 (22, 7, CURDATE() + INTERVAL 1 DAY,  '08:00', '09:00', FALSE),
 (23, 7, CURDATE() + INTERVAL 1 DAY,  '09:00', '10:00', FALSE),
 (24, 7, CURDATE() + INTERVAL 2 DAY,  '07:00', '08:00', FALSE),
 (25, 7, CURDATE() + INTERVAL 2 DAY,  '08:00', '09:00', FALSE),
--- Academia Avanza (comercio 8)
 (26, 8, CURDATE() + INTERVAL 1 DAY,  '16:00', '17:00', FALSE),
 (27, 8, CURDATE() + INTERVAL 1 DAY,  '17:00', '18:00', FALSE),
 (28, 8, CURDATE() + INTERVAL 1 DAY,  '18:00', '19:00', FALSE),
 (29, 8, CURDATE() + INTERVAL 2 DAY,  '16:00', '17:00', FALSE),
 (30, 8, CURDATE() + INTERVAL 2 DAY,  '17:00', '18:00', FALSE),
--- Sabor Casero (comercio 10)
 (31, 10, CURDATE() + INTERVAL 1 DAY, '13:00', '14:00', FALSE),
 (32, 10, CURDATE() + INTERVAL 1 DAY, '14:00', '15:00', FALSE),
 (33, 10, CURDATE() + INTERVAL 1 DAY, '15:00', '16:00', FALSE),
@@ -296,72 +293,60 @@ INSERT INTO producto (id_producto, nombre_producto, descripcion, imagen) VALUES
 (15, 'Brunch completo',         'Brunch con café, zumo, tostada y bollería',             '/images/productos/brunch.jpg'),
 (16, 'Reparación de móvil',     'Diagnóstico y reparación de pantalla y componentes',   '/images/productos/reparacion-movil.jpg'),
 (17, 'Limpieza de ordenador',   'Limpieza interna y externa + cambio de pasta térmica',  '/images/productos/limpieza-pc.jpg'),
-(18, 'Producto ecológico',      'Cesta de fruta y verdura ecológica de temporada',       '/images/productos/cesta-ecologica.jpg'),
+(18, 'Cesta ecológica',         'Fruta y verdura ecológica de temporada',                 '/images/productos/cesta-ecologica.jpg'),
 (19, 'Decoración hogar',        'Artículo de decoración para el hogar',                  '/images/productos/decoracion.jpg'),
-(20, 'Prenda moda',             'Prenda de ropa de última temporada',                    '/images/productos/prenda-moda.jpg');
+(20, 'Prenda de moda',          'Prenda de ropa de última temporada',                    '/images/productos/prenda-moda.jpg');
 
 -- ============================================================
--- 10. COMERCIO_PRODUCTO (servicios/productos por comercio)
+-- 10. COMERCIO_PRODUCTO
 -- ============================================================
 INSERT INTO comercio_producto (id_comercio_producto, id_comercio, id_producto, stock, precio) VALUES
--- Belleza Divina (comercio 1)
 (1,  1,  1,  999, 35.00),
 (2,  1,  3,  999, 28.00),
 (3,  1,  4,  999, 32.00),
--- Peluquería Estilo (comercio 2)
 (4,  2,  1,  999, 25.00),
 (5,  2,  2,  999, 18.00),
 (6,  2,  3,  999, 22.00),
--- Mercado Fresco (comercio 3)
 (7,  3,  18, 50,  15.00),
--- Centro Médico Vital (comercio 4)
 (8,  4,  5,  999, 50.00),
 (9,  4,  6,  999, 35.00),
--- Boutique Trendy (comercio 5)
 (10, 5,  20, 20,  45.00),
--- Hogar & Confort (comercio 6)
 (11, 6,  19, 15,  25.00),
--- FitZone (comercio 7)
 (12, 7,  7,  999, 12.00),
 (13, 7,  8,  999, 30.00),
--- Academia Avanza (comercio 8)
 (14, 8,  9,  999, 120.00),
 (15, 8,  10, 999, 25.00),
--- Asesoría Pro (comercio 9)
 (16, 9,  11, 999, 80.00),
 (17, 9,  12, 999, 100.00),
--- Sabor Casero (comercio 10)
 (18, 10, 13, 999, 14.50),
--- Cafetería Central (comercio 11)
 (19, 11, 14, 999, 2.50),
 (20, 11, 15, 999, 12.00),
--- TechZone (comercio 12)
 (21, 12, 16, 999, 65.00),
 (22, 12, 17, 999, 35.00);
 
 -- ============================================================
--- 11. RESEÑAS (valoraciones de clientes)
+-- 11. RESEÑAS
 -- ============================================================
 INSERT INTO resena (id_resena, titulo, comentario, fecha, valoracion, autor_nombre, autor_email, id_comercio) VALUES
-(1,  'Excelente servicio',      'Me encantó el trato recibido. Salí renovada.',                 NOW() - INTERVAL 15 DAY, 5, 'María García',     'maria.garcia@gmail.com',     1),
-(2,  'Muy profesionales',       'Gran atención al cliente. Volveré sin duda.',                 NOW() - INTERVAL 12 DAY, 4, 'Carlos López',    'carlos.lopez@gmail.com',     2),
-(3,  'Productos de calidad',    'La fruta y verdura son fresquísimas. Muy recomendable.',       NOW() - INTERVAL 10 DAY, 5, 'Ana Martínez',    'ana.martinez@gmail.com',     3),
-(4,  'Atención excelente',      'La doctora fue muy atenta y resolvió todas mis dudas.',        NOW() - INTERVAL 8 DAY,  5, 'Javier Rodríguez', 'javier.rodriguez@gmail.com', 4),
-(5,  'Buena relación calidad-precio', 'Ropa moderna a precios asequibles. Muy contenta.',       NOW() - INTERVAL 7 DAY,  4, 'Laura Sánchez',   'laura.sanchez@gmail.com',    5),
-(6,  'Decoración preciosa',     'Encontré justo lo que buscaba para mi salón. Muy bonito.',     NOW() - INTERVAL 6 DAY,  4, 'David Fernández', 'david.fernandez@gmail.com',  6),
-(7,  'El mejor gimnasio',       'Instalaciones impecables y monitores muy profesionales.',       NOW() - INTERVAL 5 DAY,  5, 'Elena González',  'elena.gonzalez@gmail.com',   7),
-(8,  'Clases muy útiles',       'El curso de inglés me ha ayudado muchísimo. Profesor genial.', NOW() - INTERVAL 4 DAY,  4, 'Miguel Ramírez',  'miguel.ramirez@gmail.com',   8),
-(9,  'Gestión impecable',       'Me resolvieron toda la papeleta de la declaración. Gracias.',  NOW() - INTERVAL 3 DAY,  5, 'María García',    'maria.garcia@gmail.com',     9),
-(10, 'Comida casera deliciosa', 'El menú del día está espectacular. Sabe a comida de la abuela.',NOW() - INTERVAL 2 DAY, 5, 'Carlos López',    'carlos.lopez@gmail.com',     10),
-(11, 'Café de especialidad',    'El mejor café del barrio. El brunch es impresionante.',        NOW() - INTERVAL 1 DAY, 4, 'Ana Martínez',    'ana.martinez@gmail.com',     11),
-(12, 'Arreglaron mi móvil',     'Rápidos y eficientes. Me dejaron el móvil como nuevo.',        NOW(),                    4, 'Javier Rodríguez', 'javier.rodriguez@gmail.com', 12),
-(13, 'Corte perfecto',          'Salí encantada con mi nuevo corte. Muy recomendable.',          NOW() - INTERVAL 9 DAY, 5, 'Laura Sánchez',   'laura.sanchez@gmail.com',    1),
-(14, 'Gran variedad',           'Tienen mucha variedad de productos ecológicos. Me encanta.',    NOW() - INTERVAL 6 DAY, 4, 'Elena González',  'elena.gonzalez@gmail.com',   3),
-(15, 'Fisioterapia de 10',      'Me recuperé de la lesión en tiempo récord. Muy profesionales.', NOW() - INTERVAL 4 DAY, 5, 'Miguel Ramírez',  'miguel.ramirez@gmail.com',   4),
-(16, 'Muy recomendable',        'Trato cercano y profesional. La academia es un acierto.',       NOW() - INTERVAL 3 DAY, 4, 'David Fernández', 'david.fernandez@gmail.com',  8);
+(1,  'Excelente servicio',      'Me encantó el trato recibido.',                          NOW() - INTERVAL 15 DAY, 5, 'María García',     'maria.garcia@gmail.com',     1),
+(2,  'Muy profesionales',       'Gran atención al cliente.',                             NOW() - INTERVAL 12 DAY, 4, 'Carlos López',    'carlos.lopez@gmail.com',     2),
+(3,  'Productos de calidad',    'La fruta y verdura son fresquísimas.',                   NOW() - INTERVAL 10 DAY, 5, 'Ana Martínez',    'ana.martinez@gmail.com',     3),
+(4,  'Atención excelente',      'La doctora fue muy atenta y resolvió mis dudas.',        NOW() - INTERVAL 8 DAY,  5, 'Javier Rodríguez', 'javier.rodriguez@gmail.com', 4),
+(5,  'Buena relación calidad-precio', 'Ropa moderna a precios asequibles.',               NOW() - INTERVAL 7 DAY,  4, 'Laura Sánchez',   'laura.sanchez@gmail.com',    5),
+(6,  'Decoración preciosa',     'Encontré justo lo que buscaba para mi salón.',           NOW() - INTERVAL 6 DAY,  4, 'David Fernández', 'david.fernandez@gmail.com',  6),
+(7,  'El mejor gimnasio',       'Instalaciones impecables y monitores profesionales.',    NOW() - INTERVAL 5 DAY,  5, 'Elena González',  'elena.gonzalez@gmail.com',   7),
+(8,  'Clases muy útiles',       'El curso de inglés me ha ayudado muchísimo.',            NOW() - INTERVAL 4 DAY,  4, 'Miguel Ramírez',  'miguel.ramirez@gmail.com',   8),
+(9,  'Gestión impecable',       'Me resolvieron toda la papeleta de la declaración.',     NOW() - INTERVAL 3 DAY,  5, 'María García',    'maria.garcia@gmail.com',     9),
+(10, 'Comida casera deliciosa', 'El menú del día está espectacular.',                     NOW() - INTERVAL 2 DAY, 5, 'Carlos López',    'carlos.lopez@gmail.com',     10),
+(11, 'Café de especialidad',    'El mejor café del barrio.',                              NOW() - INTERVAL 1 DAY, 4, 'Ana Martínez',    'ana.martinez@gmail.com',     11),
+(12, 'Arreglaron mi móvil',     'Rápidos y eficientes.',                                  NOW(),                    4, 'Javier Rodríguez', 'javier.rodriguez@gmail.com', 12),
+(13, 'Corte perfecto',          'Salí encantada con mi nuevo corte.',                     NOW() - INTERVAL 9 DAY, 5, 'Laura Sánchez',   'laura.sanchez@gmail.com',    1),
+(14, 'Gran variedad',           'Tienen mucha variedad de productos ecológicos.',         NOW() - INTERVAL 6 DAY, 4, 'Elena González',  'elena.gonzalez@gmail.com',   3),
+(15, 'Fisioterapia de 10',      'Me recuperé de la lesión en tiempo récord.',             NOW() - INTERVAL 4 DAY, 5, 'Miguel Ramírez',  'miguel.ramirez@gmail.com',   4),
+(16, 'Muy recomendable',        'Trato cercano y profesional.',                           NOW() - INTERVAL 3 DAY, 4, 'David Fernández', 'david.fernandez@gmail.com',  8);
 
 -- ============================================================
--- 12. FAVORITOS (clientes que guardan comercios)
+-- 12. FAVORITOS
 -- ============================================================
 INSERT INTO cliente_favoritos_comercio (id_cliente, id_comercio) VALUES
 (1, 1), (1, 3), (1, 10),
@@ -374,7 +359,7 @@ INSERT INTO cliente_favoritos_comercio (id_cliente, id_comercio) VALUES
 (8, 8), (8, 12);
 
 -- ============================================================
--- 13. ESTADÍSTICAS (para cada comercio)
+-- 13. ESTADÍSTICAS
 -- ============================================================
 INSERT INTO estadisticas (id_estadistica, numero_visitas, puntuacion_media, total_ventas, id_comercio) VALUES
 (1,  1240, 4.8, 156, 1),
@@ -394,20 +379,20 @@ INSERT INTO estadisticas (id_estadistica, numero_visitas, puntuacion_media, tota
 -- 14. SOLICITUDES DE COLABORACIÓN
 -- ============================================================
 INSERT INTO solicitud_colaboracion (id_solicitud_colaboracion, nombre_comercio, nombre_titular, email_comercio, telefono_comercio, categoria, descripcion, estado, terminos_aceptados, fecha_creacion) VALUES
-(1, 'Panadería El Trigal',      'Manuel Pérez',     'info@panaderiaeltrigal.com',  '612111222', 'Alimentación',   'Panadería artesana con horno de leña. Hacemos pan ecológico y bollería tradicional.',                              'APROBADA', TRUE, NOW() - INTERVAL 60 DAY),
-(2, 'Lavandería EcoClean',      'Sara Molina',      'info@ecoclean.com',           '622333444', 'Hogar',          'Lavandería ecológica con servicio de recogida y entrega a domicilio. Productos biodegradables.',                     'APROBADA', TRUE, NOW() - INTERVAL 45 DAY),
-(3, 'Clínica Dental Care',      'Dr. Antonio Ruiz', 'citas@clinicadentalcare.com', '632555666', 'Salud',          'Clínica dental con los últimos tratamientos. Odontología general, estética dental e implantes.',                    'PENDIENTE', TRUE, NOW() - INTERVAL 10 DAY),
-(4, 'Tienda de Mascotas Patas Felices', 'Lucía Hernández', 'info@patasfelices.com', '642777888', 'Otros',          'Tienda de alimentación, accesorios y servicios de peluquería para mascotas.',                                       'RECHAZADA', TRUE, NOW() - INTERVAL 20 DAY);
+(1, 'Panadería El Trigal',      'Manuel Pérez',     'info@panaderiaeltrigal.com',  '612111222', 'Alimentación', 'Panadería artesana con horno de leña.',                                           'APROBADA', TRUE, NOW() - INTERVAL 60 DAY),
+(2, 'Lavandería EcoClean',      'Sara Molina',      'info@ecoclean.com',           '622333444', 'Hogar',        'Lavandería ecológica con recogida a domicilio.',                                 'APROBADA', TRUE, NOW() - INTERVAL 45 DAY),
+(3, 'Clínica Dental Care',      'Dr. Antonio Ruiz', 'citas@clinicadentalcare.com', '632555666', 'Salud',        'Clínica dental con los últimos tratamientos.',                                    'PENDIENTE', TRUE, NOW() - INTERVAL 10 DAY),
+(4, 'Mascotas Patas Felices',   'Lucía Hernández',  'info@patasfelices.com',       '642777888', 'Otros',        'Tienda de alimentación y accesorios para mascotas.',                             'RECHAZADA', TRUE, NOW() - INTERVAL 20 DAY);
 
 -- ============================================================
 -- 15. MENSAJES DE CONTACTO
 -- ============================================================
 INSERT INTO mensaje_contacto (id_mensaje_contacto, nombre, email, asunto, tipo, mensaje, fecha_creacion) VALUES
-(1, 'Pedro Gómez',       'pedro.gomez@email.com',    'Quiero registrar mi comercio',     'registro',     'Hola, tengo una frutería en el barrio y me gustaría darme de alta en la plataforma. ¿Podéis indicarme los pasos a seguir?', NOW() - INTERVAL 30 DAY),
-(2, 'Rosa Martínez',     'rosa.martinez@email.com',  'Sugerencia de mejora',             'sugerencia',   'Sería genial que añadiráis un mapa para ver los comercios cercanos. Así sería más fácil encontrar lo que busco cerca de casa.', NOW() - INTERVAL 20 DAY),
-(3, 'Jorge Fernández',   'jorge.fernandez@email.com','Problema con una reserva',          'problema',     'Hice una reserva en Sabor Casero pero no he recibido confirmación. ¿Podéis comprobarlo? Gracias.',                     NOW() - INTERVAL 10 DAY),
-(4, 'Ana Belén García',  'anabelen@email.com',       'Colaboración con el proyecto',     'colaboracion', 'Soy dueña de un gimnasio y me encantaría formar parte de DeTuBarrio. ¿Cómo puedo colaborar?',                          NOW() - INTERVAL 5 DAY),
-(5, 'Carlos Ruiz',       'carlos.ruiz@email.com',    'Consulta sobre facturación',       'consulta',     'Necesito una factura de mi última compra en el Mercado Fresco. ¿Cómo puedo obtenerla?',                               NOW() - INTERVAL 2 DAY);
+(1, 'Pedro Gómez',     'pedro.gomez@email.com',    'Quiero registrar mi comercio', 'registro',     'Tengo una frutería y me gustaría darme de alta en la plataforma.',              NOW() - INTERVAL 30 DAY),
+(2, 'Rosa Martínez',   'rosa.martinez@email.com',  'Sugerencia de mejora',         'sugerencia',   'Sería genial si añadís un mapa para ver los comercios cercanos.',               NOW() - INTERVAL 20 DAY),
+(3, 'Jorge Fernández', 'jorge.fernandez@email.com','Problema con una reserva',      'problema',     'Hice una reserva y no he recibido confirmación.',                               NOW() - INTERVAL 10 DAY),
+(4, 'Ana Belén García','anabelen@email.com',       'Colaboración con el proyecto', 'colaboracion', 'Soy dueña de un gimnasio y me encantaría formar parte de DeTuBarrio.',          NOW() - INTERVAL 5 DAY),
+(5, 'Carlos Ruiz',     'carlos.ruiz@email.com',    'Consulta sobre facturación',   'consulta',     'Necesito una factura de mi última compra en el Mercado Fresco.',                NOW() - INTERVAL 2 DAY);
 
 -- ============================================================
 -- REACTIVAMOS FKs
