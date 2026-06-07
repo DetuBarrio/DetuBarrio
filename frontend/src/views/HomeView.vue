@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import fondo from '../assets/images/fondo.png';
 import comercioDefault from '../assets/images/buenaMesa.png'; 
@@ -8,8 +8,7 @@ import { apiUrl } from '../config/api'
 const router = useRouter()
 const searchTerm = ref('')
 const comerciosDestacados = ref([])
-const carouselRef = ref(null)
-let carouselInstance = null
+const carouselStart = ref(0)
 
 const comercioImageModules = import.meta.glob('../assets/images/*.{png,jpg,jpeg,webp,svg,gif}', {
   eager: true,
@@ -20,13 +19,24 @@ const comercioImagesByName = Object.fromEntries(
   Object.entries(comercioImageModules).map(([path, url]) => [path.split('/').pop(), url]),
 )
 
-const gruposDestacados = computed(() => {
-  const grupos = []
-  for (let i = 0; i < comerciosDestacados.value.length; i += 4) {
-    grupos.push(comerciosDestacados.value.slice(i, i + 4))
+const visibleComercios = computed(() => {
+  const list = comerciosDestacados.value
+  if (list.length <= 4) return list
+  const result = []
+  for (let i = 0; i < 4; i++) {
+    const idx = (carouselStart.value + i) % list.length
+    result.push(list[idx])
   }
-  return grupos
+  return result
 })
+
+function carouselNext() {
+  carouselStart.value = (carouselStart.value + 1) % comerciosDestacados.value.length
+}
+
+function carouselPrev() {
+  carouselStart.value = (carouselStart.value - 1 + comerciosDestacados.value.length) % comerciosDestacados.value.length
+}
 
 function getImagenComercio(imageUrl) {
   if (!imageUrl) {
@@ -93,8 +103,6 @@ onMounted(async () => {
       comerciosDestacados.value = lista
         .sort((a, b) => (b.media || b.puntuacionMedia || 0) - (a.media || a.puntuacionMedia || 0))
         .slice(0, 10)
-
-      initCarousel()
     }
   } catch (error) {
     console.error("Error al cargar los comercios destacados:", error)
@@ -221,24 +229,31 @@ onMounted(async () => {
         <div class="d-flex flex-wrap justify-content-center gap-5">
           
           <button
-            @click="router.push({ path: '/comercios', query: { categoria: 'Salud' } })"
+            @click="router.push({ path: '/comercios', query: { categoria: 'Estética y Belleza' } })"
+            class="btn btn-white shadow-sm rounded-4 px-5 py-4 d-flex align-items-center gap-3 fw-bold text-dark border fs-5"
+          >
+            <i class="bi bi-scissors text-primary"></i> Estética
+          </button>
+
+          <button
+            @click="router.push({ path: '/comercios', query: { categoria: 'Alimentación' } })"
+            class="btn btn-white shadow-sm rounded-4 px-5 py-4 d-flex align-items-center gap-3 fw-bold text-dark border fs-5"
+          >
+            <i class="bi bi-basket-fill text-primary"></i> Alimentación
+          </button>
+
+          <button
+            @click="router.push({ path: '/comercios', query: { categoria: 'Salud y Bienestar' } })"
             class="btn btn-white shadow-sm rounded-4 px-5 py-4 d-flex align-items-center gap-3 fw-bold text-dark border fs-5"
           >
             <i class="bi bi-heart-pulse-fill text-primary"></i> Salud
           </button>
 
           <button
-            @click="router.push({ path: '/comercios', query: { categoria: 'Estilismo' } })"
+            @click="router.push({ path: '/comercios', query: { categoria: 'Restauración' } })"
             class="btn btn-white shadow-sm rounded-4 px-5 py-4 d-flex align-items-center gap-3 fw-bold text-dark border fs-5"
           >
-            <i class="bi bi-scissors text-primary"></i> Estilismo
-          </button>
-
-          <button
-            @click="router.push({ path: '/comercios', query: { categoria: 'Otros' } })"
-            class="btn btn-white shadow-sm rounded-4 px-5 py-4 d-flex align-items-center gap-3 fw-bold text-dark border fs-5"
-          >
-            <i class="bi bi-three-dots text-primary"></i> Otros
+            <i class="bi bi-cup-hot-fill text-primary"></i> Restauración
           </button>
 
         </div>
@@ -261,60 +276,50 @@ onMounted(async () => {
         </div>
 
         <div v-else>
-          <div id="comerciosCarousel" class="carousel slide" ref="carouselRef">
-            <div class="carousel-inner">
+          <div class="position-relative">
+            <div class="row g-4">
               <div
-                v-for="(grupo, index) in gruposDestacados"
-                :key="index"
-                class="carousel-item"
-                :class="{ active: index === 0 }"
+                v-for="comercio in visibleComercios"
+                :key="comercio.id"
+                class="col-12 col-sm-6 col-lg-3"
               >
-                <div class="row g-4">
-                  <div
-                    v-for="comercio in grupo"
-                    :key="comercio.id"
-                    class="col-12 col-sm-6 col-lg-3"
-                  >
-                    <RouterLink
-                      :to="{ name: 'comercio-detalle', params: { id: comercio.id } }"
-                      class="text-decoration-none text-dark"
-                    >
-                      <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden card-hover">
-                        <img
-                          :src="getImagenComercio(comercio.logo)"
-                          class="card-img-top"
-                          :alt="comercio.nombreComercio"
-                          style="height: 150px; object-fit: cover"
-                        />
-                        <div class="card-body">
-                          <h6 class="fw-bold mb-0 text-truncate">{{ comercio.nombreComercio }}</h6>
-                          <small class="text-muted">{{ comercio.categoria }}</small>
+                <RouterLink
+                  :to="{ name: 'comercio-detalle', params: { id: comercio.id } }"
+                  class="text-decoration-none text-dark"
+                >
+                  <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden card-hover">
+                    <img
+                      :src="getImagenComercio(comercio.logo)"
+                      class="card-img-top"
+                      :alt="comercio.nombreComercio"
+                      style="height: 150px; object-fit: cover"
+                    />
+                    <div class="card-body">
+                      <h6 class="fw-bold mb-0 text-truncate">{{ comercio.nombreComercio }}</h6>
+                      <small class="text-muted">{{ comercio.categoria }}</small>
 
-                          <div class="text-warning small mt-2 d-flex align-items-center gap-1">
-                            <template v-for="n in 5" :key="n">
-                              <i
-                                class="bi"
-                                :class="n <= Math.round(comercio.media || comercio.puntuacionMedia || 0) ? 'bi-star-fill' : 'bi-star text-muted'"
-                              ></i>
-                            </template>
-                            <span class="text-muted ms-1">
-                              {{ (comercio.media || comercio.puntuacionMedia) ? Number(comercio.media || comercio.puntuacionMedia).toFixed(1) : '0.0' }}
-                              ({{ comercio.total || comercio.totalResenas || 0 }})
-                            </span>
-                          </div>
-                        </div>
+                      <div class="text-warning small mt-2 d-flex align-items-center gap-1">
+                        <template v-for="n in 5" :key="n">
+                          <i
+                            class="bi"
+                            :class="n <= Math.round(comercio.media || comercio.puntuacionMedia || 0) ? 'bi-star-fill' : 'bi-star text-muted'"
+                          ></i>
+                        </template>
+                        <span class="text-muted ms-1">
+                          {{ (comercio.media || comercio.puntuacionMedia) ? Number(comercio.media || comercio.puntuacionMedia).toFixed(1) : '0.0' }}
+                          ({{ comercio.total || comercio.totalResenas || 0 }})
+                        </span>
                       </div>
-                    </RouterLink>
+                    </div>
                   </div>
-                </div>
+                </RouterLink>
               </div>
             </div>
 
             <button
               class="carousel-control-prev"
               type="button"
-              data-bs-target="#comerciosCarousel"
-              data-bs-slide="prev"
+              @click="carouselPrev"
             >
               <span class="carousel-control-prev-icon carousel-btn-custom" aria-hidden="true"></span>
               <span class="visually-hidden">Anterior</span>
@@ -322,8 +327,7 @@ onMounted(async () => {
             <button
               class="carousel-control-next"
               type="button"
-              data-bs-target="#comerciosCarousel"
-              data-bs-slide="next"
+              @click="carouselNext"
             >
               <span class="carousel-control-next-icon carousel-btn-custom" aria-hidden="true"></span>
               <span class="visually-hidden">Siguiente</span>
@@ -332,14 +336,13 @@ onMounted(async () => {
 
           <div class="d-flex justify-content-center gap-2 mt-3">
             <button
-              v-for="(grupo, index) in gruposDestacados"
-              :key="index"
+              v-for="n in comerciosDestacados.length"
+              :key="n"
               type="button"
               class="carousel-dot"
-              :class="{ active: false }"
-              :data-bs-target="'#comerciosCarousel'"
-              :data-bs-slide-to="index"
-              :aria-label="'Ir a slide ' + (index + 1)"
+              :class="{ active: (n - 1) === carouselStart }"
+              @click="carouselStart = n - 1"
+              :aria-label="'Ir a posición ' + n"
             ></button>
           </div>
         </div>
