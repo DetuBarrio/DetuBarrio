@@ -17,9 +17,6 @@ CREATE TABLE IF NOT EXISTS disponibilidades (
     reservado BOOLEAN DEFAULT FALSE
 );
 
--- Aseguramos que estado_reserva sea VARCHAR para aceptar 'CONFIRMADA'
-ALTER TABLE reserva MODIFY COLUMN estado_reserva VARCHAR(20);
-
 -- ============================================================
 -- 1. LIMPIEZA TOTAL
 -- ============================================================
