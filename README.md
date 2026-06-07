@@ -22,13 +22,13 @@ DeTuBarrio permite:
 
 ```text
 DetuBarrio/
-|- rest/rest/                 # API Spring Boot (backend)
+|- backend/                 # API Spring Boot (backend)
 |  |- src/main/java/          # Controladores, servicios, repositorios, seguridad
 |  |- src/main/resources/     # application.properties + migraciones Flyway
 |  |- .env.example            # plantilla de variables locales (sin secretos)
 |  |- pom.xml
 |
-|- a/vue/                     # Frontend SPA Vue 3
+|- frontend/                     # Frontend SPA Vue 3
 |- ARQUITECTURA.md            # Arquitectura tecnica
 |- AIVEN_SETUP.md             # Guia de base de datos remota en Aiven
 |- MANUAL_USO.md              # Manual funcional por roles
@@ -54,7 +54,7 @@ DetuBarrio/
 Desde la raiz del repo:
 
 ```powershell
-cd rest/rest
+cd backend
 Copy-Item .env.example .env
 ```
 
@@ -69,7 +69,7 @@ Edita el archivo `.env` con valores reales:
 Ejecuta el backend:
 
 ```powershell
-cd rest/rest
+cd backend
 .\mvnw.cmd spring-boot:run
 ```
 
@@ -81,7 +81,7 @@ Swagger:
 ### 2) Frontend Vue
 
 ```powershell
-cd a/vue
+cd frontend
 npm install
 npm run dev
 ```
@@ -108,7 +108,7 @@ Nota: el frontend Vue usa proxy Vite para `/api` hacia `http://localhost:8080`.
 
 ## Notas de seguridad importantes
 
-- No subas nunca `rest/rest/.env` al repositorio.
+- No subas nunca `backend/.env` al repositorio.
 - El repositorio ya ignora `.env` y publica solo `.env.example`.
 - Usa un `APP_JWT_SECRET` largo y aleatorio.
 

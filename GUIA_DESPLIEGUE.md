@@ -42,7 +42,7 @@ Render va a coger el código desde GitHub y lo va a empaquetar con el Dockerfile
 | Campo | Valor |
 |---|---|
 | **Name** | `detubarrio-api` |
-| **Root Directory** | `rest/rest` |
+| **Root Directory** | `backend` |
 | **Runtime** | `Docker` (Render lo detectará automáticamente por el Dockerfile) |
 | **Branch** | `devel_jjcastilla` (o la que uses) |
 | **Region** | La más cercana a vosotros (ej. `Frankfurt`) |
@@ -110,7 +110,7 @@ También puedes abrir: `https://detubarrio-api.onrender.com/swagger-ui.html` par
 
 | Campo | Valor |
 |---|---|
-| **Root Directory** | `a/vue` (haz clic en **"Edit"** y selecciona la carpeta `a/vue`) |
+| **Root Directory** | `frontend` (haz clic en **"Edit"** y selecciona la carpeta `frontend`) |
 | **Framework Preset** | `Vite` (se detectará automático gracias al `vercel.json`) |
 | **Build Command** | `npm run build` (se rellena solo) |
 | **Output Directory** | `dist` (se rellena solo) |

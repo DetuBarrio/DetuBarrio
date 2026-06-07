@@ -19,11 +19,11 @@ Esta guia describe como conectar DeTuBarrio a MySQL en Aiven para trabajo colabo
 Desde la raiz del repositorio:
 
 ```powershell
-cd rest/rest
+cd backend
 Copy-Item .env.example .env
 ```
 
-Edita `rest/rest/.env` con tus valores de Aiven:
+Edita `backend/.env` con tus valores de Aiven:
 
 ```env
 DB_URL=jdbc:mysql://TU_HOST:TU_PORT/TU_DATABASE?sslMode=REQUIRED&allowPublicKeyRetrieval=true&serverTimezone=UTC
@@ -44,7 +44,7 @@ Generar secreto JWT en PowerShell:
 Arrancar backend:
 
 ```powershell
-cd rest/rest
+cd backend
 .\mvnw.cmd spring-boot:run
 ```
 
@@ -63,8 +63,8 @@ Para que dos desarrolladores compartan sesiones correctamente:
 
 ## 5. Buenas practicas
 
-- No subir `rest/rest/.env` a Git
-- Mantener solo `rest/rest/.env.example` en versionado
+- No subir `backend/.env` a Git
+- Mantener solo `backend/.env.example` en versionado
 - Hacer backup antes de cambios grandes:
 
 ```bash
