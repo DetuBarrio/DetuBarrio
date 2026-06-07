@@ -35,7 +35,6 @@ public class Disponibilidad {
 
     // 🛠️ NUEVA RELACIÓN CORREGIDA: Borrado en cascada para limpiar las reservas de esta disponibilidad
     @OneToMany(mappedBy = "disponibilidad", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @OneToMany(mappedBy = "idDisponibilidad", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonIgnore
     private List<Reserva> reservas;
 }
