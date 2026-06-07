@@ -17,6 +17,14 @@ CREATE TABLE IF NOT EXISTS disponibilidades (
     reservado BOOLEAN DEFAULT FALSE
 );
 
+-- Aseguramos columnas extra que necesita reserva (Hibernate las añade
+-- después de Flyway, pero las necesitamos para el INSERT).
+ALTER TABLE reserva ADD COLUMN IF NOT EXISTS id_comercio BIGINT;
+ALTER TABLE reserva ADD COLUMN IF NOT EXISTS id_usuario BIGINT;
+ALTER TABLE reserva ADD COLUMN IF NOT EXISTS id_disponibilidad BIGINT;
+ALTER TABLE reserva ADD COLUMN IF NOT EXISTS fecha_creacion DATETIME;
+ALTER TABLE reserva MODIFY COLUMN estado_reserva VARCHAR(20);
+
 -- ============================================================
 -- 1. LIMPIEZA TOTAL
 -- ============================================================
