@@ -29,8 +29,8 @@ Antes de desplegar, asegurarse de que todos los archivos necesarios están en el
 
 ```bash
 git add .
-git commit -m "Preparación para despliegue en producción"
-git push origin <tu-rama>
+git commit -m "Preparacion para despliegue: Dockerfile, Vercel, CORS configurable"
+git push origin main
 ```
 
 El repositorio ya incluye los archivos necesarios para el despliegue:
@@ -81,9 +81,9 @@ Flyway aplicará automáticamente las migraciones (`V1__all_in_one.sql` y `V2__s
 |---|---|
 | **Name** | `detubarrio-api` |
 | **Root Directory** | `backend` |
-| **Runtime** | `Docker` (se detecta automáticamente) |
-| **Branch** | `devel_jjcastilla` (o la rama correspondiente) |
-| **Region** | La más cercana (ej. `Frankfurt`) |
+| **Runtime** | `Docker` (Render lo detectará automáticamente por el Dockerfile) |
+| **Branch** | `main` |
+| **Region** | La más cercana a vosotros (ej. `Frankfurt`) |
 | **Plan** | `Free` |
 
 ### 3.2 Variables de Entorno
