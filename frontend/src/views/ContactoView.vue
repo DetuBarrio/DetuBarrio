@@ -1,6 +1,7 @@
 <script setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import { enviarMensajeContacto, solicitarColaboracion } from '../services/contactoService'
+import { apiUrl } from '../config/api'
 
 const contactForm = reactive({
     nombre: '',
@@ -8,6 +9,23 @@ const contactForm = reactive({
     asunto: '',
     tipo: '',
     mensaje: '',
+})
+
+const categorias = ref([])
+
+async function fetchCategorias() {
+    try {
+        const response = await fetch(apiUrl('/api/categorias'))
+        if (response.ok) {
+            categorias.value = await response.json()
+        }
+    } catch (error) {
+        console.error('Error fetching categories:', error)
+    }
+}
+
+onMounted(() => {
+    fetchCategorias()
 })
 
 const collaboratorForm = reactive({
@@ -253,9 +271,9 @@ async function handleCollaboratorSubmit() {
                                         <label for="categoria" class="form-label">Categoría de tu negocio</label>
                                         <select id="categoria" v-model="collaboratorForm.categoria" class="form-select form-select-lg" required @change="resetCollaboratorResponse">
                                             <option value="">Selecciona una categoría...</option>
-                                            <option value="salud">Salud</option>
-                                            <option value="estilismo">Estilismo</option>
-                                            <option value="otros">Otros</option>
+                                            <option v-for="cat in categorias" :key="cat.id" :value="cat.nombreCategoria">
+                                                {{ cat.nombreCategoria }}
+                                            </option>
                                         </select>
                                     </div>
                                     <div class="col-12">
