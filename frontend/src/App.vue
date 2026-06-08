@@ -3,6 +3,8 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { RouterView, RouterLink, useRoute, useRouter } from 'vue-router'
 import HomeView from './views/HomeView.vue'
 import AppBreadcrumbs from './components/AppBreadcrumbs.vue'
+import ToastContainer from './components/ToastContainer.vue'
+import ConfirmModal from './components/ConfirmModal.vue'
 import logoOg from './assets/images/logo_og.png'
 import { clearAuth, getAuth } from './services/authService'
 
@@ -127,6 +129,9 @@ function handleLogout() {
       <component :is="Component || HomeView" />
     </RouterView>
   </div>
+
+  <ToastContainer />
+  <ConfirmModal />
 
   <footer class="footer-custom">
       <div class="container">

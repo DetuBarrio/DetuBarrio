@@ -67,6 +67,8 @@ import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import { getAuth } from '../services/authService'
 import { apiUrl } from '../config/api'
+import { showToast } from '../utils/toastService'
+import { showConfirm } from '../utils/confirmService'
 
 const pestanaActiva = ref('proximas')
 const loading = ref(false)
@@ -113,7 +115,7 @@ const filtrarReservas = computed(() => {
 })
 
 async function cancelarCita(idReserva) {
-  if (!confirm('¿Estás seguro de que deseas cancelar esta reserva?')) return
+  const confirmed = await showConfirm({ title: 'Cancelar reserva', message: '¿Estás seguro de que deseas cancelar esta reserva?' }); if (!confirmed) return
   const authData = getAuth()
   const token = authData?.token
   const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {}
@@ -122,7 +124,7 @@ async function cancelarCita(idReserva) {
     await cargarReservasDelUsuario()
   } catch (error) {
     console.error('Fallo al cancelar la cita:', error)
-    alert('No se pudo procesar la cancelación.')
+    showToast('No se pudo procesar la cancelación.', 'error')
   }
 }
 

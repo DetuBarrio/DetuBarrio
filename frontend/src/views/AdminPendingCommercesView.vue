@@ -3,6 +3,7 @@ import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { getAuth } from '../services/authService'
 import { fetchAdminSolicitudesComercios, aprobarComercio, rechazarComercio } from '../services/adminService'
+import { showConfirm } from '../utils/confirmService'
 
 const router = useRouter()
 const auth = computed(() => getAuth())
@@ -37,9 +38,7 @@ async function loadComerciosPendientes() {
 }
 
 async function handleAprobar(comercio) {
-  if (!confirm(`¿Aprobar el comercio "${comercio.nombreComercio}"?`)) {
-    return
-  }
+  const confirmed = await showConfirm({ title: 'Aprobar comercio', message: `¿Aprobar el comercio "${comercio.nombreComercio}"?`, confirmText: 'Sí, aprobar', variant: 'primary' }); if (!confirmed) return
 
   isProcessing.value = true
   errorMessage.value = ''

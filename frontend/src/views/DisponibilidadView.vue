@@ -147,6 +147,8 @@
 import axios from 'axios';
 import { apiUrl } from '../config/api';
 import { getAuth } from '../services/authService';
+import { showToast } from '../utils/toastService';
+import { showConfirm } from '../utils/confirmService';
 
 export default {
   name: 'DisponibilidadView',
@@ -188,7 +190,7 @@ export default {
     },
     generarIntervalosLote() {
       if (!this.fechaInicio || !this.fechaFin || !this.horaInicio || !this.horaFin) {
-        alert("Por favor, rellena los rangos completos (Fechas y Horas) para calcular los bloques.");
+        showToast("Por favor, rellena los rangos completos (Fechas y Horas) para calcular los bloques.", 'warning');
         return;
       }
 
@@ -196,12 +198,12 @@ export default {
       const finD = new Date(this.fechaFin + 'T00:00:00');
 
       if (inicioD > finD) {
-        alert("La fecha de inicio no puede superar la fecha de finalización.");
+        showToast("La fecha de inicio no puede superar la fecha de finalización.", 'warning');
         return;
       }
 
       if (this.horaInicio >= this.horaFin) {
-        alert("La hora de apertura tiene que ser menor que la hora de cierre.");
+        showToast("La hora de apertura tiene que ser menor que la hora de cierre.", 'warning');
         return;
       }
 
@@ -242,7 +244,7 @@ export default {
         }
         diaActual.setDate(diaActual.getDate() + 1);
       }
-      alert(`¡Éxito! Se han pre-calculado ${totalContador} bloques de citas en la tabla inferior.`);
+      showToast(`¡Éxito! Se han pre-calculado ${totalContador} bloques de citas en la tabla inferior.`, 'success');
     },
     async guardarCambios() {
       try {
@@ -255,25 +257,24 @@ export default {
         await axios.post(apiUrl('/api/disponibilidad/configurar'), payload, config);
         this.nuevosIntervalos = [];
         this.cargarHorarios();
-        alert("¡Todos los bloques horarios se han subido con éxito!");
+        showToast("¡Todos los bloques horarios se han subido con éxito!", 'success');
       } catch (error) {
         const mensaje = error.response?.data?.error || "Error al sincronizar";
-        alert("Cuidado: " + mensaje);
+        showToast("Cuidado: " + mensaje, 'error');
       }
     },
     async eliminar(id, index, esNuevo) {
-      if (confirm("¿Seguro que quieres borrar este horario?")) {
-        if (esNuevo) {
-          this.nuevosIntervalos.splice(index, 1);
-        } else {
-          try {
-            const auth = getAuth();
-            const config = auth?.token ? { headers: { Authorization: `Bearer ${auth.token}` } } : {};
-            await axios.delete(apiUrl(`/api/disponibilidad/${id}`), config);
-            this.cargarHorarios();
-          } catch (error) {
-            alert("No se pudo borrar de la base de datos.");
-          }
+      const confirmed = await showConfirm({ title: 'Eliminar horario', message: '¿Seguro que quieres borrar este horario?' }); if (!confirmed) return;
+      if (esNuevo) {
+        this.nuevosIntervalos.splice(index, 1);
+      } else {
+        try {
+          const auth = getAuth();
+          const config = auth?.token ? { headers: { Authorization: `Bearer ${auth.token}` } } : {};
+          await axios.delete(apiUrl(`/api/disponibilidad/${id}`), config);
+          this.cargarHorarios();
+        } catch (error) {
+          showToast("No se pudo borrar de la base de datos.", 'error');
         }
       }
     }

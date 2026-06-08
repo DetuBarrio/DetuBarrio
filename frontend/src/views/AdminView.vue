@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { clearAuth, getAuth } from '../services/authService'
+import { showConfirm, showPrompt } from '../utils/confirmService'
 // ✅ Importamos la nueva función fetchAdminComerciosActivos
 import { fetchAdminColaboraciones, fetchAdminMensajes, fetchAdminSolicitudesComercios, fetchAdminComerciosActivos, aprobarComercio, rechazarComercio, aprobarColaboracion, rechazarColaboracion, eliminarComercio } from '../services/adminService'
 
@@ -77,7 +78,7 @@ async function handleAprobarComercio(comercioId) {
 }
 
 async function handleRechazarComercio(comercioId) {
-  const motivo = prompt('¿Por qué rechazas esta solicitud?')
+  const motivo = await showPrompt({ title: 'Rechazar solicitud', message: '¿Por qué rechazas esta solicitud?', placeholder: 'Motivo del rechazo...', confirmText: 'Rechazar' })
   if (!motivo) return
 
   processingId.value = comercioId
@@ -93,9 +94,7 @@ async function handleRechazarComercio(comercioId) {
 
 // ✅ Esta función ahora sirve tanto para solicitudes como para comercios activos
 async function handleEliminarComercio(comercioId, nombreComercio = 'este comercio') {
-  if (!confirm(`⚠️ ¿ESTÁS COMPLETAMENTE SEGURO?\n\nVas a eliminar "${nombreComercio}" de forma PERMANENTE.\nEsto borrará el negocio del directorio y a TODOS los usuarios vinculados a él.`)) {
-    return
-  }
+  const confirmed = await showConfirm({ title: 'Eliminar comercio', message: `¿ESTÁS COMPLETAMENTE SEGURO?\n\nVas a eliminar "${nombreComercio}" de forma PERMANENTE.\nEsto borrará el negocio del directorio y a TODOS los usuarios vinculados a él.`, confirmText: 'Sí, eliminar permanentemente', variant: 'danger' }); if (!confirmed) return
 
   processingId.value = comercioId
   try {
@@ -121,7 +120,7 @@ async function handleAprobarColaboracion(solicitudId) {
 }
 
 async function handleRechazarColaboracion(solicitudId) {
-  const motivo = prompt('¿Por qué rechazas esta colaboración?')
+  const motivo = await showPrompt({ title: 'Rechazar colaboración', message: '¿Por qué rechazas esta colaboración?', placeholder: 'Motivo del rechazo...', confirmText: 'Rechazar' })
   if (!motivo) return
 
   processingColaboracionId.value = solicitudId

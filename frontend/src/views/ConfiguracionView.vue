@@ -87,6 +87,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { apiUrl } from '../config/api'
+import { showToast } from '../utils/toastService'
 
 const router = useRouter()
 
@@ -155,7 +156,7 @@ async function guardarDatosGenerales() {
     if (ultimoRecursoId) {
       comercio.value.id = Number(ultimoRecursoId)
     } else {
-      alert('Error: No se ha podido vincular un ID de comercio válido.')
+      showToast('Error: No se ha podido vincular un ID de comercio válido.', 'error')
       return
     }
   }
@@ -187,12 +188,12 @@ async function guardarDatosGenerales() {
       }
     }
 
-    alert('Perfil actualizado con éxito')
+    showToast('Perfil actualizado con éxito', 'success')
     irAlDashboard()
   } catch (error) {
     console.error('Error al guardar:', error)
     const mensajeError = error.response?.data?.message || 'Error al actualizar el perfil'
-    alert(`Error: ${mensajeError}`)
+    showToast(`Error: ${mensajeError}`, 'error')
   } finally {
     loading.value = false
   }

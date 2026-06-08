@@ -13,6 +13,7 @@ import SeccionReservas from './SeccionReservas.vue'
 import { apiUrl } from '../config/api'
 import { isComercioOpen } from '../utils/comercioHelpers'
 import OpenedBadge from '../components/OpenedBadge.vue'
+import { showToast } from '../utils/toastService'
 
 import { getAuth } from '../services/authService' 
 
@@ -71,7 +72,7 @@ async function conmutarFavorito() {
     esFavorito.value = response.data
   } catch (error) {
     console.error("Error al conmutar favorito:", error)
-    alert("Hubo un error al actualizar tus favoritos.")
+    showToast('Hubo un error al actualizar tus favoritos.', 'error')
   }
 }
 // -----------------------------------------------------------------------
@@ -179,11 +180,11 @@ async function enviarResena() {
       { headers: { Authorization: `Bearer ${token}` } }
     )
     nuevaResena.value = { titulo: '', comentario: '', valoracion: 5 }
-    alert('¡Tu opinión se ha compartido con éxito!')
+    showToast('¡Tu opinión se ha compartido con éxito!', 'success')
     await loadComercio() 
   } catch (error) {
     console.error("Error al publicar la reseña:", error)
-    alert('No se pudo guardar la reseña.')
+    showToast('No se pudo guardar la reseña.', 'error')
   } finally {
     enviando.value = false
   }

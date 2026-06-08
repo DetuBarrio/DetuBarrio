@@ -3,6 +3,8 @@ import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { apiUrl } from '../config/api';
 import { getAuth } from '../services/authService';
+import { showToast } from '../utils/toastService';
+import { showConfirm } from '../utils/confirmService';
 
 const listaReservas = ref([]);
 const isLoading = ref(true); // 🔄 Nuevo estado de carga inicializado en true
@@ -132,20 +134,20 @@ function claseEstadoPremium(estado) {
 async function borrarReserva(reserva) {
   const idReserva = reserva.idReserva || reserva.id;
   if (!idReserva) {
-    alert("No se pudo encontrar el ID de esta reserva.");
+    showToast("No se pudo encontrar el ID de esta reserva.", 'error');
     return;
   }
-  if (!confirm('¿Estás seguro de que deseas eliminar esta cita?')) return;
+  const confirmed = await showConfirm({ title: 'Eliminar cita', message: '¿Estás seguro de que deseas eliminar esta cita?' }); if (!confirmed) return;
   
   try {
     const auth = getAuth();
     const config = auth?.token ? { headers: { Authorization: `Bearer ${auth.token}` } } : {};
     await axios.delete(apiUrl(`/api/reservas/${idReserva}`), config);
     listaReservas.value = listaReservas.value.filter(r => (r.id !== idReserva && r.idReserva !== idReserva));
-    alert("Reserva eliminada con éxito.");
+    showToast("Reserva eliminada con éxito.", 'success');
   } catch (error) {
     console.error("Error al borrar la reserva:", error);
-    alert("No se pudo borrar del servidor.");
+    showToast("No se pudo borrar del servidor.", 'error');
   }
 }
 </script>
