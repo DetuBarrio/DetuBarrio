@@ -122,6 +122,7 @@ async function cancelarCita(idReserva) {
   try {
     await axios.put(apiUrl(`/api/reservas/${idReserva}/cancelar`), {}, config)
     await cargarReservasDelUsuario()
+    showToast('Reserva cancelada con éxito.', 'success')
   } catch (error) {
     console.error('Fallo al cancelar la cita:', error)
     showToast('No se pudo procesar la cancelación.', 'error')

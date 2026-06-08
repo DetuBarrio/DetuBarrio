@@ -241,7 +241,7 @@ function estadoLabel(estado) {
                 </thead>
                 <tbody>
                   <tr v-for="res in (dashboard?.ultimasReservas || [])" :key="res.id" style="cursor: pointer;" @click="irAReservas">
-                    <td class="fw-semibold text-muted">Usuario #{{ res.idUsuario || res.id }}</td>
+                    <td class="fw-semibold">{{ res.clienteNombre || 'Usuario #' + (res.idUsuario || res.id) }}</td>
                     <td>{{ formatDate(res.fechaReserva) }}</td>
                     <td>{{ res.horaInicio?.slice(0,5) || '-' }}</td>
                     <td class="text-end">

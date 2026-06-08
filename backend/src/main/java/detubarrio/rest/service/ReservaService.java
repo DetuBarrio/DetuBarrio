@@ -123,6 +123,12 @@ public class ReservaService {
             });
         }
         
+        if (reserva.getIdComercio() != null) {
+            comercioRepository.findById(reserva.getIdComercio()).ifPresent(comercio -> {
+                dto.setNombreComercio(comercio.getNombreComercio());
+            });
+        }
+        
         return dto;
     }
 }
