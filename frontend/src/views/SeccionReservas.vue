@@ -51,6 +51,7 @@ import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
 import { getAuth } from '../services/authService'; 
 import { apiUrl } from '../config/api';
+import { showToast } from '../utils/toastService';
 
 const props = defineProps(['idComercio', 'disponibilidades']);
 const fechaSeleccionada = ref('');
@@ -98,7 +99,7 @@ const formatHora = (hora) => {
 
 const confirmarReserva = async () => {
   if (!estaLogueado.value) {
-    alert('Para reservar citas tienes que logearte.');
+    showToast('Para reservar citas tienes que iniciar sesión.', 'warning');
     return;
   }
 
@@ -118,12 +119,12 @@ const confirmarReserva = async () => {
     
     await axios.post(apiUrl('/api/reservas'), reservaData, config);
     
-    alert('¡Reserva realizada con éxito!');
+    showToast('¡Reserva realizada con éxito!', 'success');
     location.reload(); 
     
   } catch (error) {
     console.error("Error al reservar:", error.response?.data || error);
-    alert('Error al reservar: ' + (error.response?.data?.message || "Error interno del servidor"));
+    showToast('Error al reservar: ' + (error.response?.data?.message || "Error interno del servidor"), 'error');
   }
 };
 </script>
