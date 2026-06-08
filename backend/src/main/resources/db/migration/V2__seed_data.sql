@@ -1,7 +1,7 @@
 -- ============================================================================
 -- V2__seed_data.sql
 -- Datos de semilla para DeTuBarrio - Entorno de producción
--- Contraseñas: admin -> ***, resto -> ***
+-- Contraseñas hasheadas con bcrypt
 -- ============================================================================
 
 SET FOREIGN_KEY_CHECKS = 0;
@@ -55,8 +55,6 @@ INSERT INTO categoria (id_categoria, nombre_categoria, descripcion) VALUES
 
 -- ============================================================
 -- 3. USUARIOS
---    Admin: admin1     ($2b$10$eBn2JdPbExEhtNtQdePfGepfBgdUAVpxm0yTPRX2aEyC5LTFraHby)
---    Resto: usuario123 ($2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q)
 -- ============================================================
 INSERT INTO usuario (id_usuario, nombre, email, password_hash, rol, id_comercio) VALUES
 (1,  'Admin DeTuBarrio',    'admin@gmail.com',             '$2b$10$eBn2JdPbExEhtNtQdePfGepfBgdUAVpxm0yTPRX2aEyC5LTFraHby', 'ADMIN', NULL),
