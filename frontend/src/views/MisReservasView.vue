@@ -80,6 +80,10 @@ function extraerUsuarioId(reserva) {
   return reserva.idUsuario || reserva.usuarioId || 'N/A';
 }
 
+function extraerNombreComercio(reserva) {
+  return reserva.nombreComercio || '';
+}
+
 // --- FORMATEADORES ---
 
 function formatearFecha(reserva) {
@@ -212,6 +216,7 @@ async function borrarReserva(reserva) {
           <thead>
             <tr>
               <th scope="col" class="ps-4 py-3.5 fs-6_5 text-start">Fecha y Hora</th>
+              <th scope="col" class="py-3.5 fs-6_5 text-center">Establecimiento</th>
               <th scope="col" class="py-3.5 fs-6_5 text-center">Cliente</th>
               <th scope="col" class="py-3.5 fs-6_5 text-center">Correo Electrónico</th>
               <th scope="col" class="py-3.5 fs-6_5 text-center">Estado</th>
@@ -220,7 +225,7 @@ async function borrarReserva(reserva) {
           </thead>
           <tbody>
             <tr v-if="reservasFiltradas.length === 0">
-              <td colspan="5" class="text-center py-5 text-muted">
+              <td colspan="6" class="text-center py-5 text-muted">
                 <i class="bi bi-calendar-minus display-5 d-block mb-3 text-placeholder"></i>
                 <p class="mb-1 fw-bold fs-5 text-dark">No se encontraron reservas</p>
                 <p class="small mb-0">No hay citas registradas que coincidan con el estado seleccionado.</p>
@@ -238,6 +243,10 @@ async function borrarReserva(reserva) {
                     <span v-if="extraerHoraFin(reserva)"> - {{ formatHora(extraerHoraFin(reserva)) }}</span>
                   </span>
                 </div>
+              </td>
+
+              <td class="text-center py-4 fs-5 fw-bold text-dark">
+                {{ extraerNombreComercio(reserva) || '—' }}
               </td>
 
               <td class="text-center py-4 fs-5 fw-bold text-dark">

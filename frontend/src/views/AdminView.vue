@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { clearAuth, getAuth } from '../services/authService'
 import { showConfirm, showPrompt } from '../utils/confirmService'
+import { showToast } from '../utils/toastService'
 // ✅ Importamos la nueva función fetchAdminComerciosActivos
 import { fetchAdminColaboraciones, fetchAdminMensajes, fetchAdminSolicitudesComercios, fetchAdminComerciosActivos, aprobarComercio, rechazarComercio, aprobarColaboracion, rechazarColaboracion, eliminarComercio } from '../services/adminService'
 
@@ -85,6 +86,7 @@ async function handleRechazarComercio(comercioId) {
   try {
     await rechazarComercio(comercioId, motivo)
     await loadData()
+    showToast('Solicitud rechazada correctamente.', 'success')
   } catch (error) {
     errorMessage.value = error?.response?.data?.details?.[0] || 'No se pudo rechazar el comercio.'
   } finally {
@@ -99,7 +101,8 @@ async function handleEliminarComercio(comercioId, nombreComercio = 'este comerci
   processingId.value = comercioId
   try {
     await eliminarComercio(comercioId)
-    await loadData() // Recarga todo el panel para actualizar los contadores
+    await loadData()
+    showToast(`Comercio "${nombreComercio}" eliminado permanentemente.`, 'success')
   } catch (error) {
     errorMessage.value = error?.response?.data?.details?.[0] || 'No se pudo eliminar el comercio en cascada.'
   } finally {
@@ -127,6 +130,7 @@ async function handleRechazarColaboracion(solicitudId) {
   try {
     await rechazarColaboracion(solicitudId, motivo)
     await loadData()
+    showToast('Colaboración rechazada correctamente.', 'success')
   } catch (error) {
     errorMessage.value = error?.response?.data?.details?.[0] || 'No se pudo rechazar la colaboración.'
   } finally {

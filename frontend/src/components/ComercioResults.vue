@@ -48,6 +48,14 @@ const props = defineProps({
     required: true,
     default: () => []
   },
+  searchQuery: {
+    type: String,
+    default: ''
+  },
+  totalResultados: {
+    type: Number,
+    default: 0
+  },
   horaActual: {
     type: String,
     required: true
@@ -66,7 +74,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['cambiar-pagina'])
+const emit = defineEmits(['cambiar-pagina', 'update:search-query'])
 
 function formatRating(rating) {
   return Number(rating || 0).toFixed(1)
@@ -110,6 +118,37 @@ function mostrarPaginas() {
 
 <template>
   <div class="container my-4">
+    <div class="search-bar mb-4">
+      <div class="input-group shadow-sm rounded-4 overflow-hidden border border-light">
+        <span class="input-group-text bg-white border-0 ps-3">
+          <i class="bi bi-search text-primary fs-5"></i>
+        </span>
+        <input
+          type="text"
+          class="form-control border-0 py-2 fs-5"
+          placeholder="Buscar por nombre, categoría o descripción..."
+          :value="searchQuery"
+          @input="$emit('update:search-query', $event.target.value)"
+          aria-label="Buscar comercios"
+        />
+        <button
+          v-if="searchQuery"
+          class="btn btn-link text-decoration-none px-3"
+          @click="$emit('update:search-query', '')"
+          aria-label="Limpiar búsqueda"
+        >
+          <i class="bi bi-x-lg text-muted"></i>
+        </button>
+      </div>
+    </div>
+
+    <div v-if="searchQuery && totalResultados !== undefined" class="mb-3">
+      <p class="text-muted mb-0 fw-medium">
+        <i class="bi bi-funnel-fill me-1"></i>
+        {{ totalResultados }} {{ totalResultados === 1 ? 'resultado' : 'resultados' }}
+      </p>
+    </div>
+
     <div v-if="comercios.length" class="row g-4" id="comercioGrid">
       <ComercioCard
         v-for="comercio in comercios"
@@ -160,6 +199,19 @@ function mostrarPaginas() {
 
 <style scoped>
 #comercioGrid { transition: all 0.3s ease; }
+
+.search-bar .input-group:focus-within {
+  box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.15);
+  border-radius: 16px;
+}
+
+.search-bar .form-control:focus {
+  box-shadow: none;
+}
+
+.search-bar .form-control::placeholder {
+  color: #94a3b8;
+}
 
 .pagination .page-link {
   border-radius: 8px;

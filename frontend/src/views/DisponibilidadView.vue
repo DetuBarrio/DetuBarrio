@@ -273,6 +273,7 @@ export default {
           const config = auth?.token ? { headers: { Authorization: `Bearer ${auth.token}` } } : {};
           await axios.delete(apiUrl(`/api/disponibilidad/${id}`), config);
           this.cargarHorarios();
+          showToast("Horario eliminado con éxito.", 'success');
         } catch (error) {
           showToast("No se pudo borrar de la base de datos.", 'error');
         }

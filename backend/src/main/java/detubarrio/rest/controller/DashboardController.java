@@ -130,9 +130,13 @@ public class DashboardController {
             String comercioNombre = comercioRepository.findById(r.getIdComercio())
                 .map(Comercio::getNombreComercio)
                 .orElse("Comercio #" + r.getIdComercio());
+            String clienteNombre = r.getIdUsuario() != null
+                ? usuarioRepository.findById(r.getIdUsuario()).map(Usuario::getNombre).orElse("Usuario #" + r.getIdUsuario())
+                : "Anónimo";
             Map<String, Object> item = new HashMap<>();
             item.put("id", r.getId());
             item.put("comercioNombre", comercioNombre);
+            item.put("clienteNombre", clienteNombre);
             item.put("estadoReserva", r.getEstadoReserva());
             item.put("fechaReserva", r.getDisponibilidad() != null ? r.getDisponibilidad().getFecha().toString() : null);
             item.put("horaInicio", r.getDisponibilidad() != null ? r.getDisponibilidad().getHoraInicio().toString() : null);

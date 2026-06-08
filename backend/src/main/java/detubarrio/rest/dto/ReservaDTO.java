@@ -11,6 +11,7 @@ public class ReservaDTO {
     private Long idServicio;
     private String clienteNombre;
     private String clienteEmail;
+    private String nombreComercio;
     
     private Long idDisponibilidad; 
     private Disponibilidad disponibilidad; 
