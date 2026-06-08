@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import fondo from '../assets/images/fondo.png';
-import comercioDefault from '../assets/images/buenaMesa.png'; 
+import comercioDefault from '../assets/images/logo_og.png'; 
 import { apiUrl } from '../config/api'
 
 const router = useRouter()

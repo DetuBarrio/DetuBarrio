@@ -12,9 +12,11 @@ const comercioImagesByName = Object.fromEntries(
   Object.entries(comercioImageModules).map(([path, url]) => [path.split('/').pop(), url]),
 )
 
+const DEFAULT_IMAGE = comercioImagesByName.logo_og || comercioImagesByName['logo_og.png'] || '/images/logo_og.png'
+
 function normalizeImageUrl(imageUrl) {
   if (!imageUrl || imageUrl === 'null' || imageUrl === '') {
-    return 'https://images.unsplash.com/photo-1534723452862-4c874018d66d?q=80&w=600&auto=format&fit=crop'
+    return DEFAULT_IMAGE
   }
 
   if (typeof imageUrl === 'string' && imageUrl.startsWith('/uploads')) {
