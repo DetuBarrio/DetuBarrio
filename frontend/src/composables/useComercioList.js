@@ -5,6 +5,7 @@ import {
   valoracionOpciones,
   horarioOpciones,
   mapComercio,
+  isComercioOpen,
 } from '../utils/comercioHelpers'
 
 export function useComercioList() {
@@ -40,10 +41,6 @@ export function useComercioList() {
   const formatRating = (rating) => {
     if (!rating) return "0.0";
     return Number(rating).toFixed(1);
-  };
-
-  const isComercioOpen = (comercio, hora) => {
-    return true;
   };
 
   function getCategoriaNombreById(categoriaId) {

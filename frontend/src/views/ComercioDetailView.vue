@@ -11,6 +11,8 @@ import fontaneroImage from '../assets/images/fontanero.png'
 import buenaMesaImage from '../assets/images/buenaMesa.png'
 import SeccionReservas from './SeccionReservas.vue'
 import { apiUrl } from '../config/api'
+import { isComercioOpen } from '../utils/comercioHelpers'
+import OpenedBadge from '../components/OpenedBadge.vue'
 
 import { getAuth } from '../services/authService' 
 
@@ -105,6 +107,7 @@ const logoImage = computed(() => normalizeImageUrl(comercio.value?.logo || comer
 const resenas = computed(() => comercio.value?.resenas || [])
 const ratingValue = computed(() => Number(comercio.value?.puntuacionMedia || 0).toFixed(1))
 const totalResenas = computed(() => Number(comercio.value?.totalResenas || 0))
+const comercioIsOpen = computed(() => comercio.value ? isComercioOpen(comercio.value, new Date()) : false)
 
 const ratingDistribution = computed(() => {
   const counts = [1, 2, 3, 4, 5].map((valoracion) => ({ valoracion, count: 0 }))
@@ -398,9 +401,9 @@ watch(() => route.params.id, loadComercio, { immediate: true })
 
                 <div>
                   <p class="small text-uppercase text-muted fw-bold tracking-wider mb-2"><i class="bi bi-info-circle me-1.5 text-primary"></i>Estado</p>
-                  <div class="d-flex align-items-center gap-2 bg-success-light p-2.5 rounded-3">
-                    <span class="badge rounded-pill bg-success px-2.5 py-1.5 fw-bold">Abierto</span>
-                    <span class="small text-success-emphasis fw-medium">Información orientativa</span>
+                  <div class="d-flex align-items-center gap-2 p-2.5 rounded-3" :class="comercioIsOpen ? 'bg-success-light' : 'bg-danger-light'">
+                    <OpenedBadge :state="comercioIsOpen" />
+                    <span class="small" :class="comercioIsOpen ? 'text-success-emphasis' : 'text-danger-emphasis'" style="font-weight: 500;">Información orientativa</span>
                   </div>
                 </div>
               </div>

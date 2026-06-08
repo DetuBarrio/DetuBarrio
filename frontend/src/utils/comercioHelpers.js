@@ -59,6 +59,14 @@ export function parseMinutes(timeValue) {
   return (hours * 60) + minutes
 }
 
+const DIAS_MAP = {
+  domingo: 0, lunes: 1, martes: 2, miércoles: 3, miercoles: 3, jueves: 4, viernes: 5, sábado: 6, sabado: 6,
+}
+
+function diaNombreToNumber(nombre) {
+  return DIAS_MAP[nombre.toLowerCase().trim()] ?? -1
+}
+
 export function parseDaysText(textoDias) {
   const texto = (textoDias || '').toLowerCase().trim()
 
@@ -70,12 +78,46 @@ export function parseDaysText(textoDias) {
     return [0, 1, 2, 3, 4, 5, 6]
   }
 
-  if (texto.includes('lunes a viernes')) {
-    return [1, 2, 3, 4, 5]
+  const patrones = [
+    'lunes a viernes', 'lunes a sabado', 'lunes a sábado',
+    'martes a domingo', 'martes a sabado', 'martes a sábado', 'martes a viernes',
+    'miércoles a domingo', 'miercoles a domingo', 'miércoles a sabado', 'miercoles a sabado',
+    'miércoles a sábado', 'miercoles a sábado', 'miércoles a viernes', 'miercoles a viernes',
+    'jueves a domingo', 'jueves a sabado', 'jueves a sábado', 'jueves a viernes',
+    'viernes a domingo', 'viernes a sabado', 'viernes a sábado',
+    'sábado a domingo', 'sabado a domingo',
+  ]
+
+  for (const patron of patrones) {
+    if (texto.includes(patron)) {
+      const [inicio, , fin] = patron.split(' ')
+      const diaInicio = diaNombreToNumber(inicio)
+      const diaFin = diaNombreToNumber(fin)
+      if (diaInicio >= 0 && diaFin >= 0) {
+        if (diaInicio <= diaFin) {
+          return Array.from({ length: diaFin - diaInicio + 1 }, (_, i) => diaInicio + i)
+        }
+        return [
+          ...Array.from({ length: 7 - diaInicio }, (_, i) => diaInicio + i),
+          ...Array.from({ length: diaFin + 1 }, (_, i) => i),
+        ]
+      }
+    }
   }
 
-  if (texto.includes('lunes a sabado') || texto.includes('lunes a sábado')) {
-    return [1, 2, 3, 4, 5, 6]
+  const matchDiaADia = texto.match(/([a-záéíóúñ]+)\s*[-–a ]+\s*([a-záéíóúñ]+)/i)
+  if (matchDiaADia) {
+    const diaInicio = diaNombreToNumber(matchDiaADia[1])
+    const diaFin = diaNombreToNumber(matchDiaADia[2])
+    if (diaInicio >= 0 && diaFin >= 0) {
+      if (diaInicio <= diaFin) {
+        return Array.from({ length: diaFin - diaInicio + 1 }, (_, i) => diaInicio + i)
+      }
+      return [
+        ...Array.from({ length: 7 - diaInicio }, (_, i) => diaInicio + i),
+        ...Array.from({ length: diaFin + 1 }, (_, i) => i),
+      ]
+    }
   }
 
   const matchAbreviado = texto.match(/([dlmxjvs])\s*[-–]\s*([dlmxjvs])/i)
@@ -89,13 +131,23 @@ export function parseDaysText(textoDias) {
     }
 
     if (diaInicio <= diaFin) {
-      return Array.from({ length: diaFin - diaInicio + 1 }, (_, index) => diaInicio + index)
+      return Array.from({ length: diaFin - diaInicio + 1 }, (_, i) => diaInicio + i)
     }
 
-    return [...Array.from({ length: 7 - diaInicio }, (_, index) => diaInicio + index), ...Array.from({ length: diaFin + 1 }, (_, index) => index)]
+    return [
+      ...Array.from({ length: 7 - diaInicio }, (_, i) => diaInicio + i),
+      ...Array.from({ length: diaFin + 1 }, (_, i) => i),
+    ]
   }
 
   return null
+}
+
+function horaEnRango(minutos, apertura, cierre) {
+  if (apertura <= cierre) {
+    return minutos >= apertura && minutos <= cierre
+  }
+  return minutos >= apertura || minutos <= cierre
 }
 
 export function isComercioOpen(comercio, currentDate) {
@@ -112,21 +164,19 @@ export function isComercioOpen(comercio, currentDate) {
   }
 
   const textoHorario = `${comercio.horario || ''}`
-  const rangoHoras = textoHorario.match(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/)
-  if (!rangoHoras) {
+  const rangos = [...textoHorario.matchAll(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/g)]
+
+  if (rangos.length === 0) {
     return true
   }
 
-  const apertura = parseMinutes(rangoHoras[1])
-  const cierre = parseMinutes(rangoHoras[2])
-
-  if (apertura === null || cierre === null) {
-    return true
+  for (const rango of rangos) {
+    const apertura = parseMinutes(rango[1])
+    const cierre = parseMinutes(rango[2])
+    if (apertura !== null && cierre !== null && horaEnRango(minutosActuales, apertura, cierre)) {
+      return true
+    }
   }
 
-  if (apertura <= cierre) {
-    return minutosActuales >= apertura && minutosActuales <= cierre
-  }
-
-  return minutosActuales >= apertura || minutosActuales <= cierre
+  return false
 }
