@@ -1,7 +1,7 @@
 -- ============================================================================
 -- V2__seed_data.sql
 -- Datos de semilla para DeTuBarrio - Entorno de producción
--- Contraseñas: admin zeta123, resto 123456
+-- Contraseñas: admin -> ***, resto -> ***
 -- ============================================================================
 
 SET FOREIGN_KEY_CHECKS = 0;
@@ -55,45 +55,45 @@ INSERT INTO categoria (id_categoria, nombre_categoria, descripcion) VALUES
 
 -- ============================================================
 -- 3. USUARIOS
---    Admin: zeta123 ($2b$10$0nNmdGwXe4t0JLuykSknf.snQxZ9gmQSkZwRubx4caXGTvuhUY2tm)
---    Resto: 123456  ($2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2)
+--    Admin: admin1     ($2b$10$eBn2JdPbExEhtNtQdePfGepfBgdUAVpxm0yTPRX2aEyC5LTFraHby)
+--    Resto: usuario123 ($2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q)
 -- ============================================================
 INSERT INTO usuario (id_usuario, nombre, email, password_hash, rol, id_comercio) VALUES
-(1,  'Admin DeTuBarrio',    'admin@gmail.com',             '$2b$10$0nNmdGwXe4t0JLuykSknf.snQxZ9gmQSkZwRubx4caXGTvuhUY2tm', 'ADMIN', NULL),
+(1,  'Admin DeTuBarrio',    'admin@gmail.com',             '$2b$10$eBn2JdPbExEhtNtQdePfGepfBgdUAVpxm0yTPRX2aEyC5LTFraHby', 'ADMIN', NULL),
 
-(2,  'María García',        'maria.garcia@gmail.com',       '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'USUARIO', NULL),
-(3,  'Carlos López',        'carlos.lopez@gmail.com',       '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'USUARIO', NULL),
-(4,  'Ana Martínez',        'ana.martinez@gmail.com',       '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'USUARIO', NULL),
-(5,  'Javier Rodríguez',    'javier.rodriguez@gmail.com',   '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'USUARIO', NULL),
-(6,  'Laura Sánchez',       'laura.sanchez@gmail.com',      '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'USUARIO', NULL),
-(7,  'David Fernández',     'david.fernandez@gmail.com',    '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'USUARIO', NULL),
-(8,  'Elena González',      'elena.gonzalez@gmail.com',     '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'USUARIO', NULL),
-(9,  'Miguel Ramírez',      'miguel.ramirez@gmail.com',     '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'USUARIO', NULL),
+(2,  'María García',        'maria.garcia@gmail.com',       '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'USUARIO', NULL),
+(3,  'Carlos López',        'carlos.lopez@gmail.com',       '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'USUARIO', NULL),
+(4,  'Ana Martínez',        'ana.martinez@gmail.com',       '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'USUARIO', NULL),
+(5,  'Javier Rodríguez',    'javier.rodriguez@gmail.com',   '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'USUARIO', NULL),
+(6,  'Laura Sánchez',       'laura.sanchez@gmail.com',      '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'USUARIO', NULL),
+(7,  'David Fernández',     'david.fernandez@gmail.com',    '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'USUARIO', NULL),
+(8,  'Elena González',      'elena.gonzalez@gmail.com',     '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'USUARIO', NULL),
+(9,  'Miguel Ramírez',      'miguel.ramirez@gmail.com',     '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'USUARIO', NULL),
 
 -- Dueños de comercios APROBADOS
-(10, 'Laura Díaz',          'contacto@belladivina.com',     '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'COMERCIO', NULL),
-(11, 'Roberto Ruiz',        'info@peluqueriaestilo.com',   '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'COMERCIO', NULL),
-(12, 'Pedro Hernández',     'info@mercadofresco.com',      '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'COMERCIO', NULL),
-(13, 'Dra. Carmen Torres',  'citas@centromedicovital.com', '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'COMERCIO', NULL),
-(14, 'Marina Blanco',       'info@fitzone.com',            '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'COMERCIO', NULL),
-(15, 'Jorge Pastor',        'avanza@academiaavanza.com',   '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'COMERCIO', NULL),
-(16, 'Antonio Ruiz',        'reservas@saborcasero.com',    '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'COMERCIO', NULL),
-(17, 'Raquel Molina',       'central@cafeteriacentral.com','$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'COMERCIO', NULL),
-(18, 'Pablo Navarro',       'info@techzone.com',           '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'COMERCIO', NULL),
+(10, 'Laura Díaz',          'contacto@belladivina.com',     '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'COMERCIO', NULL),
+(11, 'Roberto Ruiz',        'info@peluqueriaestilo.com',   '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'COMERCIO', NULL),
+(12, 'Pedro Hernández',     'info@mercadofresco.com',      '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'COMERCIO', NULL),
+(13, 'Dra. Carmen Torres',  'citas@centromedicovital.com', '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'COMERCIO', NULL),
+(14, 'Marina Blanco',       'info@fitzone.com',            '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'COMERCIO', NULL),
+(15, 'Jorge Pastor',        'avanza@academiaavanza.com',   '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'COMERCIO', NULL),
+(16, 'Antonio Ruiz',        'reservas@saborcasero.com',    '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'COMERCIO', NULL),
+(17, 'Raquel Molina',       'central@cafeteriacentral.com','$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'COMERCIO', NULL),
+(18, 'Pablo Navarro',       'info@techzone.com',           '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'COMERCIO', NULL),
 
 -- Nuevos dueños APROBADOS
-(19, 'Elena Serrano',       'info@nuevoamanecer.com',      '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'COMERCIO', NULL),
-(20, 'Juan Vega',           'hola@fruteriavega.com',       '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'COMERCIO', NULL),
-(21, 'Manuel Carmona',      'info@carniceriaslecta.com',   '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'COMERCIO', NULL),
-(22, 'Dr. Antonio Ruiz',    'citas@clinicadentalcare.com', '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'COMERCIO', NULL),
-(23, 'Sara Montero',        'info@fisiomove.com',          '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'COMERCIO', NULL),
-(24, 'Daniel Castro',       'info@crossfitbox.com',        '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'COMERCIO', NULL),
-(25, 'Laura Moreno',        'info@escuelamusica.com',      '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'COMERCIO', NULL),
-(26, 'Mario Rossi',         'reservas@pizzeriaroma.com',   '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'COMERCIO', NULL),
-(27, 'Álvaro Mesa',         'info@pcexpress.com',          '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'COMERCIO', NULL),
-(28, 'Sara Molina',         'info@ecoclean.com',           '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'COMERCIO', NULL),
-(29, 'Lucía Hernández',     'info@patasfelices.com',       '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'COMERCIO', NULL),
-(30, 'Manuel Pérez',        'info@panaderiaeltrigal.com',  '$2b$10$uuP/rJ2iK9JEgfkYoSgm.unVwv4MrMgbR28jRTTpl.d/Gej75pCp2', 'COMERCIO', NULL);
+(19, 'Elena Serrano',       'info@nuevoamanecer.com',      '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'COMERCIO', NULL),
+(20, 'Juan Vega',           'hola@fruteriavega.com',       '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'COMERCIO', NULL),
+(21, 'Manuel Carmona',      'info@carniceriaslecta.com',   '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'COMERCIO', NULL),
+(22, 'Dr. Antonio Ruiz',    'citas@clinicadentalcare.com', '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'COMERCIO', NULL),
+(23, 'Sara Montero',        'info@fisiomove.com',          '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'COMERCIO', NULL),
+(24, 'Daniel Castro',       'info@crossfitbox.com',        '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'COMERCIO', NULL),
+(25, 'Laura Moreno',        'info@escuelamusica.com',      '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'COMERCIO', NULL),
+(26, 'Mario Rossi',         'reservas@pizzeriaroma.com',   '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'COMERCIO', NULL),
+(27, 'Álvaro Mesa',         'info@pcexpress.com',          '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'COMERCIO', NULL),
+(28, 'Sara Molina',         'info@ecoclean.com',           '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'COMERCIO', NULL),
+(29, 'Lucía Hernández',     'info@patasfelices.com',       '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'COMERCIO', NULL),
+(30, 'Manuel Pérez',        'info@panaderiaeltrigal.com',  '$2b$10$kEeGIg2cWn/eNSgTUu4k1Oh3xXhtuLlN9zRM6eQMvRiaE2sjZeW4q', 'COMERCIO', NULL);
 
 -- ============================================================
 -- 4. COMERCIOS APROBADOS (18)
