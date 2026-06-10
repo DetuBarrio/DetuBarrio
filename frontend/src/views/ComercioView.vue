@@ -16,6 +16,7 @@ const {
   valoracionOpciones,
   horarioOpciones,
   comerciosFiltrados,
+  comerciosPaginados,
   totalComercios,
   totalResultados,
   limpiarFiltros,
@@ -77,7 +78,7 @@ const {
             Esto soluciona cualquier desajuste de lectura de props en el hijo.
           -->
           <ComercioResults
-            :comercios="comerciosFiltrados"
+            :comercios="comerciosPaginados"
             :search-query="searchQuery"
             :hora-actual="horaActual"
             :format-rating="formatRating"

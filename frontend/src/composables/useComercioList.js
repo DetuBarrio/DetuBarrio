@@ -20,8 +20,6 @@ export function useComercioList() {
   const errorMessage = ref('')
 
   const currentPage = ref(0)
-  const totalPages = ref(0)
-  const totalElements = ref(0)
   const pageSize = ref(8)
 
   let intervaloHoraActual = null
@@ -86,6 +84,17 @@ export function useComercioList() {
     })
   })
 
+  const comerciosPaginados = computed(() => {
+    const start = currentPage.value * pageSize.value
+    return comerciosFiltrados.value.slice(start, start + pageSize.value)
+  })
+
+  const totalPages = computed(() => {
+    const total = comerciosFiltrados.value.length
+    return total > 0 ? Math.ceil(total / pageSize.value) : 0
+  })
+
+  const totalElements = computed(() => comerciosFiltrados.value.length)
   const totalComercios = computed(() => totalElements.value)
   const totalResultados = computed(() => comerciosFiltrados.value.length)
 
@@ -101,7 +110,6 @@ export function useComercioList() {
   function cambiarPagina(pagina) {
     if (pagina < 0 || pagina >= totalPages.value) return
     currentPage.value = pagina
-    cargarComercios()
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -113,18 +121,14 @@ export function useComercioList() {
     isLoading.value = true
     errorMessage.value = ''
     try {
-      const params = {
-        page: currentPage.value,
-        size: pageSize.value,
-      }
+      const params = { size: 9999 }
       if (categoriaSeleccionada.value) {
         params.categoriaId = categoriaSeleccionada.value
+        params.page = 0
       }
       const data = await fetchComercios(params)
       comercios.value = (data.content || []).map((i) => mapComercio(i, comercioImagesByName, DEFAULT_COMERCIO_IMAGE))
-      totalPages.value = data.totalPages || 0
-      totalElements.value = data.totalElements || 0
-      currentPage.value = data.number || 0
+      currentPage.value = 0
     } catch (e) {
       console.error(e)
       errorMessage.value = 'No se pudieron cargar los comercios.'
@@ -137,6 +141,16 @@ export function useComercioList() {
   watch(categoriaSeleccionada, () => {
     currentPage.value = 0
     cargarComercios()
+  })
+
+  watch(valoracionSeleccionada, () => { currentPage.value = 0 })
+  watch(horarioSeleccionado, () => { currentPage.value = 0 })
+  watch(searchQuery, () => { currentPage.value = 0 })
+
+  watch(comerciosFiltrados, () => {
+    if (currentPage.value > 0 && currentPage.value >= totalPages.value) {
+      currentPage.value = Math.max(0, totalPages.value - 1)
+    }
   })
 
   watch(
@@ -182,7 +196,7 @@ export function useComercioList() {
   return {
     comercios, categorias, categoriaSeleccionada, valoracionSeleccionada, horarioSeleccionado,
     searchQuery, horaActual, isLoading, errorMessage, valoracionOpciones, horarioOpciones,
-    comerciosFiltrados, totalComercios, totalResultados, limpiarFiltros, formatRating, isComercioOpen,
+    comerciosFiltrados, comerciosPaginados, totalComercios, totalResultados, limpiarFiltros, formatRating, isComercioOpen,
     currentPage, totalPages, pageSize, cambiarPagina,
   }
 }
